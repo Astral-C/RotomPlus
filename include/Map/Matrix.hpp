@@ -8,9 +8,8 @@ struct MatrixEntry {
     std::weak_ptr<MapChunkHeader> mChunkHeader;
 };
 
-class Matrix
-{
-private:
+class Matrix {
+    int mWidth, mHeight;
     std::vector<std::shared_ptr<MapChunk>> mChunks;
 public:
     Matrix(/* args */);

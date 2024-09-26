@@ -1,9 +1,15 @@
+#include <NDS/System/Archive.hpp>
 
-struct ChunkHeader {
+struct MapChunkHeader {
 
 };
 
 class MapChunk {
-private: 
+
+
+public:
+    void LoadGraphics(std::shared_ptr<Palkia::Nitro::File> fieldData);
+
+    MapChunk();
 
 };
