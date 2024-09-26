@@ -1,0 +1,15 @@
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "lib/bStream"]
+	path = lib/bStream
+	url = https://github.com/Astral-C/bStream.git
+[submodule "lib/Palkia"]
+	path = lib/Palkia
+	url = https://github.com/Astral-C/Palkia
+[submodule "lib/imgui"]
+	path = lib/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "lib/ImGuiFileDialog"]
+	path = lib/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
