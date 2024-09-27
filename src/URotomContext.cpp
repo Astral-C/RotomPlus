@@ -1,3 +1,4 @@
+#include <iostream>
 #include "URotomContext.hpp"
 
 #include "../lib/ImGuiFileDialog/ImGuiFileDialog.h"
@@ -7,7 +8,7 @@
 #include <bstream/bstream.h>
 #include "ImGuizmo.h"
 #include "IconsForkAwesome.h"
-
+#include "Text.hpp"
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -209,6 +210,10 @@ void URotomContext::Render(float deltaTime) {
 		projection = mCamera.GetProjectionMatrix();
 		view = mCamera.GetViewMatrix();
 
+
+		// Render Models
+
+
 		cursorPos = ImGui::GetCursorScreenPos();
 		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mViewTex)), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});
 
@@ -299,16 +304,34 @@ void URotomContext::RenderMenuBar() {
 
 	if (bIsFileDialogOpen) {
 		IGFD::FileDialogConfig config;
-		ImGuiFileDialog::Instance()->OpenDialog("OpenRomDialog", "Choose Pokemon ROM", "*.nds", config);
+		ImGuiFileDialog::Instance()->OpenDialog("OpenRomDialog", "Choose Pokemon ROM", ".nds", config);
 	}
 
 	if (ImGuiFileDialog::Instance()->Display("OpenRomDialog")) {
 		if (ImGuiFileDialog::Instance()->IsOk()) {
-			std::string FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			std::string FilePath = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::cout << FilePath << std::endl;
 
 			try {
 				// load rom here
+				std::cout << "Loading Rom..." << std::endl;
+				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
+
+				// Load Area Names
+
+				std::cout << "Getting message arc..." << std::endl;
+				auto msgArchive = mRom->GetFile("msgdata/pl_msg.narc");
+				bStream::CMemoryStream msgArcStream(msgArchive->GetData(), msgArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+				std::cout << "Got message arc! Mounting archive..." << std::endl;
+				
+				auto locationNamesArc = Palkia::Nitro::Archive(msgArcStream);
+				std::cout << "Mounted, getting location names file..." << std::endl;
+				auto locationNamesFile = locationNamesArc.GetFileByIndex(433);
+				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+
+				std::cout << "Decoding Location Names..." << std::endl; 
+				std::vector<std::string> locationNames = Text::DecodeStringList(locationNamesStream);
+
 			}
 			catch (std::runtime_error e) {
 				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";

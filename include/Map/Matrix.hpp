@@ -12,6 +12,8 @@ class Matrix {
     int mWidth, mHeight;
     std::vector<std::shared_ptr<MapChunk>> mChunks;
 public:
-    Matrix(/* args */);
+    void Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::shared_ptr<Palkia::Nitro::Archive> fieldDataArchive);
+
+    Matrix();
     ~Matrix();
 };
