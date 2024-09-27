@@ -46,7 +46,6 @@ void MapManager::LoadZone(uint32_t nameID){
     for(auto header : mChunkHeaders){
         if(header->mPlaceNameID == nameID){
             matrixIndices.push_back(header->mMatrixID);
-            lastHeader = header;
         }
     }
 

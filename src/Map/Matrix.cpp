@@ -20,7 +20,8 @@ void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr
     if(hasHeaders){
         for (uint8_t y = 0; y < mHeight; y++){
             for (uint8_t x = 0; x < mWidth; x++){
-                mEntries[(y * mWidth) + x].mChunkHeader = mHeaders[stream.readUInt16()];
+                uint16_t header = stream.readUInt16();
+                if(header != 0xFFFF) mEntries[(y * mWidth) + x].mChunkHeader = mHeaders[header];
             }
         }
     } else {
@@ -43,13 +44,15 @@ void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr
         for (uint8_t x = 0; x < mWidth; x++){
             
             uint16_t mapChunkID = stream.readUInt16();
-            if(!mChunks.contains(mapChunkID)){
-                auto chunkData = fieldDataArchive.lock()->GetFileByIndex(mapChunkID);
-                bStream::CMemoryStream chunkStream(chunkData->GetData(), chunkData->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-                mChunks[mapChunkID] = std::make_shared<MapChunk>(chunkStream);
-            }
+            if(mapChunkID != 0xFFFF){
+                if(!mChunks.contains(mapChunkID) && mapChunkID){
+                    auto chunkData = fieldDataArchive.lock()->GetFileByIndex(mapChunkID);
+                    bStream::CMemoryStream chunkStream(chunkData->GetData(), chunkData->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+                    mChunks[mapChunkID] = std::make_shared<MapChunk>(chunkStream);
+                }
 
-            mEntries[(y * mWidth) + x].mChunk = mChunks[mapChunkID];
+                mEntries[(y * mWidth) + x].mChunk = mChunks[mapChunkID];
+            }
         }
     }
     

@@ -155,7 +155,7 @@ void URotomContext::Render(float deltaTime) {
 		ImGui::Text("Current Chunk");
 
 		ImGui::Separator();
-
+		
 		// Show Chunk Settings
 		// Buildings, npcs, etc
 	ImGui::End();
