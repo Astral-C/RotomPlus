@@ -9,6 +9,7 @@
 #include "ImGuizmo.h"
 #include "IconsForkAwesome.h"
 #include "Text.hpp"
+#include <algorithm>
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -134,6 +135,18 @@ void URotomContext::Render(float deltaTime) {
 		ImGui::Separator();
 		
 		// Render zones as listed by names list 
+		for(auto zone : mLocationNames){
+			if(mCurrentLocation == zone){
+				ImGui::TextColored(ImVec4(0.5, 1.0, 0.5, 1.0), zone.data());
+			} else {
+				ImGui::Text(zone.data());
+				if(ImGui::IsItemClicked(0)){
+					mCurrentLocation = zone;
+					mMapManager.LoadZone(std::find(mLocationNames.begin(), mLocationNames.end(), zone) - mLocationNames.begin());
+				}
+			}
+		}
+
 
 	ImGui::End();
 
@@ -152,9 +165,11 @@ void URotomContext::Render(float deltaTime) {
 	ImGui::Begin("viewportWindow");
 
 		ImGui::BeginTabBar("mapToolbar", ImGuiTabBarFlags_Reorderable);
-			if(ImGui::BeginTabItem("3D View")){
-				// on click
-				ImGui::EndTabItem();
+			for(auto tool : mEditorTools){
+				if(ImGui::BeginTabItem(tool.data())){
+					//Switch tool
+					ImGui::EndTabItem();
+				}
 			}
 		ImGui::EndTabBar();
 
@@ -252,9 +267,6 @@ void URotomContext::Render(float deltaTime) {
 			// [veebs]: Fix this, imguizmo update broke it
 
 		}
-		//glm::mat4 outMtx();
-		//ImGuizmo::ViewManipulate(&view[0][0], &projection[0][0], ImGuizmo::OPERATION::UNIVERSAL, ImGuizmo::MODE::WORLD, &outMtx[0][0], 64, ImVec2(mainViewport->Size.x - 74, mainViewport->Size.y - 74), ImVec2(64, 64), ImColor(ImVec4(0.35,0.2,0.35,0.35)));
-		//mCamera.SetViewMatrix(outMtx);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -314,23 +326,21 @@ void URotomContext::RenderMenuBar() {
 
 			try {
 				// load rom here
-				std::cout << "Loading Rom..." << std::endl;
 				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
 
 				// Load Area Names
 
-				std::cout << "Getting message arc..." << std::endl;
 				auto msgArchive = mRom->GetFile("msgdata/pl_msg.narc");
 				bStream::CMemoryStream msgArcStream(msgArchive->GetData(), msgArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-				std::cout << "Got message arc! Mounting archive..." << std::endl;
+
 				
 				auto locationNamesArc = Palkia::Nitro::Archive(msgArcStream);
-				std::cout << "Mounted, getting location names file..." << std::endl;
 				auto locationNamesFile = locationNamesArc.GetFileByIndex(433);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
-				std::cout << "Decoding Location Names..." << std::endl; 
-				std::vector<std::string> locationNames = Text::DecodeStringList(locationNamesStream);
+				mLocationNames = Text::DecodeStringList(locationNamesStream);
+
+				mMapManager.Init(mRom.get());
 
 			}
 			catch (std::runtime_error e) {
@@ -380,10 +390,10 @@ void URotomContext::RenderMenuBar() {
 		ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
 		ImGui::Text("https://github.com/Astral-C/Rotom");
 
-		textWidth = ImGui::CalcTextSize("Made by SpaceCats").x;
+		textWidth = ImGui::CalcTextSize("Made by veebs").x;
 
 		ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-		ImGui::Text("Made by SpaceCats");
+		ImGui::Text("Made by veebs");
 
 		ImGui::Separator();
 

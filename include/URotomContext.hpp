@@ -8,11 +8,16 @@
 
 #include <NDS/System/Rom.hpp>
 #include <NDS/System/Archive.hpp>
+#include "Map/Map.hpp"
 
 class URotomContext {
 	
-	std::array<std::string, 3> mEditorTools = {"Map Editor", "Encounter Editor", "A third, funnier tab"};
-	
+	std::array<std::string, 3> mEditorTools = {"Map Editor", "Encounter Editor", "Trainer Editor"};
+	std::vector<std::string> mLocationNames = {};
+	std::string mCurrentLocation = "";
+
+	MapManager mMapManager;
+
 	std::unique_ptr<Palkia::Nitro::Rom> mRom = nullptr;
 
 	uint32_t mGizmoOperation { 0 };
