@@ -23,6 +23,7 @@ public:
     
     void Init(Palkia::Nitro::Rom*); // load archives needed for map loading
     void LoadZone(uint32_t); // needs to pass some
+    void SetActiveMatrix(uint32_t index);
 
     MapManager(){}
     ~MapManager(){}
