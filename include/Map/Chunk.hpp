@@ -2,6 +2,10 @@
 #define __MAP_CHUNK_H__
 #include <NDS/System/Archive.hpp>
 
+namespace MapGraphicsHandler {
+    void ClearModelCache();
+}
+
 struct MapChunkHeader {
     uint8_t mAreaID;
     uint8_t mMoveModelID;

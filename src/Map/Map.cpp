@@ -38,6 +38,10 @@ void MapManager::Init(Palkia::Nitro::Rom* rom){
     mEventDataArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
 }
 
+void MapManager::SetActiveMatrix(uint32_t index){
+    MapGraphicsHandler::ClearModelCache();
+}
+
 void MapManager::LoadZone(uint32_t nameID){
     // check if a map is already loaded, then save + clear
     mMatrices.clear();

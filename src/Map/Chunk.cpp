@@ -1,6 +1,14 @@
 #include "Map/Chunk.hpp"
 #include "Util.hpp"
 
+
+namespace MapGraphicsHandler {
+    std::map<uint16_t, std::unique_ptr<NSBMD>> mLoadedModels;
+    void ClearModelCache(){
+        mLoadedModels.clear();
+    }
+}
+
 void MapChunkHeader::Read(bStream::CStream& stream){
     mAreaID = stream.readUInt8();
     mMoveModelID = stream.readUInt8();
@@ -50,9 +58,9 @@ MapChunk::MapChunk(bStream::CStream& stream){
     }
 
     // read model buffer into memory so we can load this as and when we need to!
-        mModelData = {};
-        mModelData.resize(modelSize);
-        stream.readBytesTo(mModelData.data(), modelSize);
+    mModelData = {};
+    mModelData.resize(modelSize);
+    stream.readBytesTo(mModelData.data(), modelSize);
 
     // TODO: figure out bdhc stuff! 
 }
