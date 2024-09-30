@@ -1,5 +1,6 @@
 #ifndef __MAP_CHUNK_H__
 #define __MAP_CHUNK_H__
+#include <glm/glm/glm.hpp>
 #include <NDS/System/Archive.hpp>
 
 namespace MapGraphicsHandler {
@@ -38,13 +39,16 @@ struct Building {
 };
 
 class MapChunk {
+    uint16_t mID;
     std::array<std::pair<uint8_t, uint8_t>, 1024> mMovementPermissions;
     std::vector<Building> mBuildings;
     std::vector<uint8_t> mModelData;
 public:
-    void LoadGraphics(std::shared_ptr<Palkia::Nitro::File> buildModels);
+    void LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::shared_ptr<Palkia::Nitro::Archive> buildModels);
 
-    MapChunk(bStream::CStream&);
+    void Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v);
+
+    MapChunk(uint16_t, bStream::CStream&);
     ~MapChunk();
 };
 

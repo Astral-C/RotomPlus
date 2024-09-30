@@ -1,11 +1,18 @@
+#include <glm/glm/glm.hpp>
+#include <glm/glm/gtc/matrix_transform.hpp>
+#include <NDS/Assets/NSBMD.hpp>
+#include <NDS/Assets/NSBTX.hpp>
 #include "Map/Chunk.hpp"
 #include "Util.hpp"
 
-
 namespace MapGraphicsHandler {
-    std::map<uint16_t, std::unique_ptr<NSBMD>> mLoadedModels;
+    std::map<uint16_t, std::shared_ptr<Palkia::Formats::NSBMD>> mLoadedChunkModels;
+    std::map<uint16_t, std::shared_ptr<Palkia::Formats::NSBMD>> mLoadedModels;
+    std::map<uint16_t, std::shared_ptr<Palkia::Formats::NSBTX>> mTextureSets;
     void ClearModelCache(){
+        mLoadedChunkModels.clear();
         mLoadedModels.clear();
+        mTextureSets.clear();
     }
 }
 
@@ -34,7 +41,45 @@ void MapChunkHeader::Read(bStream::CStream& stream){
     mFlyFlag = byte & 0b00000001;
 }
 
-MapChunk::MapChunk(bStream::CStream& stream){
+void MapChunk::LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::shared_ptr<Palkia::Nitro::Archive> buildModels){
+    bStream::CMemoryStream mapModelStream(mModelData.data(), mModelData.size(), bStream::Endianess::Little, bStream::OpenMode::In);
+    std::shared_ptr<Palkia::Formats::NSBMD> mapModel = std::make_shared<Palkia::Formats::NSBMD>();
+    mapModel->Load(mapModelStream);
+    
+    bStream::CMemoryStream mapTexStrm(mapTex->GetData(), mapTex->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    Palkia::Formats::NSBTX mapTextureSet;
+    mapTextureSet.Load(mapTexStrm);
+
+    mapModel->AttachNSBTX(&mapTextureSet);
+
+    MapGraphicsHandler::mLoadedChunkModels[mID] = mapModel;
+
+    for(auto building : mBuildings){
+        if(!MapGraphicsHandler::mLoadedModels.contains(building.mModelID) && building.mModelID < buildModels->GetFileCount()){
+            auto buildingModel = buildModels->GetFileByIndex(building.mModelID);
+            bStream::CMemoryStream buildingModelStream(buildingModel->GetData(), buildingModel->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+            MapGraphicsHandler::mLoadedModels[building.mModelID] = std::make_shared<Palkia::Formats::NSBMD>();
+            MapGraphicsHandler::mLoadedModels[building.mModelID]->Load(buildingModelStream);
+        }
+    }
+
+    
+
+}
+
+void MapChunk::Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v){
+    glm::mat4 chunkTransform = v * glm::translate(glm::mat4(1.0f), glm::vec3(cx * 512, cz, cy * 512));
+    MapGraphicsHandler::mLoadedChunkModels[mID]->Render(chunkTransform);
+    
+    for(auto building : mBuildings){
+        glm::mat4 modelTransform = v * glm::translate(glm::mat4(1.0f), glm::vec3((cx * 512) + building.x, cz + building.y, (cy * 512) + building.z));
+        MapGraphicsHandler::mLoadedModels[building.mModelID]->Render(modelTransform);
+    }
+
+}
+
+MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
+    mID = id;
     uint32_t permissionsSize = stream.readUInt32();
     uint32_t buildingsSize = stream.readUInt32();
     uint32_t modelSize = stream.readUInt32();

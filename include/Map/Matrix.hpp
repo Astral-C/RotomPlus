@@ -1,6 +1,7 @@
 #ifndef __MATRIX_H__
 #define __MATRIX_H__
 
+#include <glm/glm/glm.hpp>
 #include "Chunk.hpp"
 #include <memory>
 #include <vector>
@@ -18,6 +19,10 @@ class Matrix {
     std::vector<MatrixEntry> mEntries;
     std::map<uint16_t, std::shared_ptr<MapChunk>> mChunks;
 public:
+    std::string GetName() { return mName; }
+    std::vector<MatrixEntry>& GetEntries() { return mEntries; }
+
+    void Draw(glm::mat4);
     void Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr<Palkia::Nitro::Archive> fieldDataArchive, std::vector<std::shared_ptr<MapChunkHeader>>& mHeaders);
 
     Matrix();

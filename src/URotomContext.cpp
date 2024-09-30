@@ -10,6 +10,7 @@
 #include "IconsForkAwesome.h"
 #include "Text.hpp"
 #include <algorithm>
+#include <format>
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -152,8 +153,27 @@ void URotomContext::Render(float deltaTime) {
 
 	ImGui::SetNextWindowClass(&mainWindowOverride);
 	ImGui::Begin("chunkWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-		ImGui::Text("Current Chunk");
+		ImGui::Text("Current Zone");
+		ImGui::Separator();
 
+		ImGui::Text("Map Matrices");
+		auto matrices = mMapManager.GetMatrices();
+		if(matrices.size() > 0){
+			if(ImGui::BeginCombo("##mapMatrices", matrices[mCurrentMatrixIdx]->GetName().data())){
+				for(int i = 0; i < matrices.size(); i++){
+					bool is_selected = (matrices[mCurrentMatrixIdx]->GetName() == matrices[i]->GetName()); // You can store your selection however you want, outside or inside your objects
+					if (ImGui::Selectable(matrices[i]->GetName().data(), is_selected))
+						mCurrentMatrixIdx = i;
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+		}
+
+		ImGui::Separator();
+		ImGui::NewLine();
+		ImGui::Text("Current Chunk");
 		ImGui::Separator();
 		
 		// Show Chunk Settings
@@ -227,7 +247,7 @@ void URotomContext::Render(float deltaTime) {
 
 
 		// Render Models
-
+		mMapManager.Draw(projection * view);
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mViewTex)), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});

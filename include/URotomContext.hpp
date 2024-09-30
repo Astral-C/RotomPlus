@@ -12,6 +12,7 @@
 
 class URotomContext {
 	
+	uint32_t mCurrentMatrixIdx { 0 };
 	std::array<std::string, 3> mEditorTools = {"Map Editor", "Encounter Editor", "Trainer Editor"};
 	std::vector<std::string> mLocationNames = {};
 	std::string mCurrentLocation = "";
