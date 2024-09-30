@@ -28,7 +28,7 @@ public:
     std::vector<std::shared_ptr<Matrix>>& GetMatrices() { return mMatrices; }
     std::vector<std::shared_ptr<MapChunkHeader>>& GetChunkHeaders() { return mChunkHeaders; }
     
-    void Init(Palkia::Nitro::Rom*); // load archives needed for map loading
+    void Init(Palkia::Nitro::Rom*,std::vector<std::string>); // load archives needed for map loading
     void LoadZone(uint32_t); // needs to pass some
     void SetActiveMatrix(uint32_t);
     void Draw(glm::mat4);

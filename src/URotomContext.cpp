@@ -135,7 +135,8 @@ void URotomContext::Render(float deltaTime) {
 	ImGui::Text("Zones");
 		ImGui::Separator();
 		
-		// Render zones as listed by names list 
+		// Render zones as listed by names list
+		int zoneIdx = 0;
 		for(auto zone : mLocationNames){
 			if(mCurrentLocation == zone){
 				ImGui::TextColored(ImVec4(0.5, 1.0, 0.5, 1.0), zone.data());
@@ -143,9 +144,11 @@ void URotomContext::Render(float deltaTime) {
 				ImGui::Text(zone.data());
 				if(ImGui::IsItemClicked(0)){
 					mCurrentLocation = zone;
-					mMapManager.LoadZone(std::find(mLocationNames.begin(), mLocationNames.end(), zone) - mLocationNames.begin());
+					mCurrentMatrixIdx = 0;
+					mMapManager.LoadZone(zoneIdx);
 				}
 			}
+			zoneIdx++;
 		}
 
 
@@ -161,9 +164,11 @@ void URotomContext::Render(float deltaTime) {
 		if(matrices.size() > 0){
 			if(ImGui::BeginCombo("##mapMatrices", matrices[mCurrentMatrixIdx]->GetName().data())){
 				for(int i = 0; i < matrices.size(); i++){
-					bool is_selected = (matrices[mCurrentMatrixIdx]->GetName() == matrices[i]->GetName()); // You can store your selection however you want, outside or inside your objects
-					if (ImGui::Selectable(matrices[i]->GetName().data(), is_selected))
+					bool is_selected = (mCurrentMatrixIdx == i); // You can store your selection however you want, outside or inside your objects
+					if (ImGui::Selectable(std::format("{} : {}", i, matrices[i]->GetName()).data(), is_selected)){
+						mMapManager.SetActiveMatrix(i);
 						mCurrentMatrixIdx = i;
+					}
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
 				}
@@ -247,6 +252,7 @@ void URotomContext::Render(float deltaTime) {
 
 
 		// Render Models
+		glEnable(GL_DEPTH_TEST);
 		mMapManager.Draw(projection * view);
 
 		cursorPos = ImGui::GetCursorScreenPos();
@@ -360,7 +366,7 @@ void URotomContext::RenderMenuBar() {
 
 				mLocationNames = Text::DecodeStringList(locationNamesStream);
 
-				mMapManager.Init(mRom.get());
+				mMapManager.Init(mRom.get(), mLocationNames);
 
 			}
 			catch (std::runtime_error e) {

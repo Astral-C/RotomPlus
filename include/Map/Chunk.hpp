@@ -40,9 +40,9 @@ struct Building {
 
 class MapChunk {
     uint16_t mID;
-    std::array<std::pair<uint8_t, uint8_t>, 1024> mMovementPermissions;
-    std::vector<Building> mBuildings;
-    std::vector<uint8_t> mModelData;
+    std::array<std::pair<uint8_t, uint8_t>, 1024> mMovementPermissions {};
+    std::vector<Building> mBuildings {};
+    std::vector<uint8_t> mModelData {};
 public:
     void LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::shared_ptr<Palkia::Nitro::Archive> buildModels);
 

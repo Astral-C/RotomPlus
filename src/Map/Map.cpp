@@ -1,23 +1,30 @@
+#include <format>
 #include "Map/Map.hpp"
 
-void MapManager::Init(Palkia::Nitro::Rom* rom){
+std::vector<std::string> locationNames;
+
+void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> locations){
+    locationNames = locations;
     auto arm9 = rom->GetFile("arm9.bin");
     bStream::CMemoryStream armStream(arm9->GetData(), arm9->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     std::cout << "ARM9 Binary Size is 0x" << std::hex << arm9->GetSize() << std::dec << std::endl;
     armStream.seek(0xE601C);
 
     uint8_t areaCount = 0;
-    for(int i = 0; i < 500; i++){
+    for(int i = 0; i < 570; i++){
         std::shared_ptr<MapChunkHeader> header = std::make_shared<MapChunkHeader>();
         header->Read(armStream);
+        std::cout << "Loading header with map name " << locations[header->mPlaceNameID] << " " << (uint)header->mPlaceNameID << " Area " << std::dec << (uint)header->mAreaID << std::endl;
         areaCount = std::max(header->mAreaID, areaCount);
         mChunkHeaders.push_back(header);
     }
 
     // Load area data
     auto areaDataFile = rom->GetFile("fielddata/areadata/area_data.narc");
-    bStream::CMemoryStream areaStream(areaDataFile->GetData(), areaDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    auto areaDataStream = bStream::CMemoryStream(areaDataFile->GetData(), areaDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    mAreaDataArchive = std::make_shared<Palkia::Nitro::Archive>(areaDataStream);
     for(int i = 0; i  < areaCount; i++){
+        auto areaStream = bStream::CMemoryStream(mAreaDataArchive->GetFileByIndex(i)->GetData(), mAreaDataArchive->GetFileByIndex(i)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
         mAreas.push_back({.mBuildingSet = areaStream.readUInt16(), .mMapTileset = areaStream.readUInt16(), .mUnknown = areaStream.readUInt16(), .mLightType = areaStream.readUInt16()});
     }
 
@@ -50,14 +57,14 @@ void MapManager::Init(Palkia::Nitro::Rom* rom){
 void MapManager::SetActiveMatrix(uint32_t index){
     mActiveMatrix = index;
     MapGraphicsHandler::ClearModelCache();
-
+    if(mMatrices.size() == 0) return;
     for(auto chunk : mMatrices[index]->GetEntries()){
         auto chunkLocked = chunk.mChunk.lock();
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
         if(chunk.mChunk.lock() && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
-            //mAreas[chunkHeaderLocked->mAreaID].mMapTileset)
+            //mAreas[chunkHeaderLocked->mAreaID] .mMapTileset)
             int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
-            chunkLocked->LoadGraphics(mMapTexArchive->GetFileByIndex((texSet < mMapTexArchive->GetFileCount() ? texSet : 6)), mBuildingArchive);
+            chunkLocked->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
     }
 
@@ -68,22 +75,27 @@ void MapManager::LoadZone(uint32_t nameID){
     mMatrices.clear();
     mNameID = nameID;
 
-    std::vector<uint32_t> matrixIndices = {};
+    MapGraphicsHandler::ClearModelCache();
+
+    std::vector<std::pair<uint32_t, std::shared_ptr<MapChunkHeader>>> matrixIndices = {};
     for(auto header : mChunkHeaders){
+        std::cout << locationNames[header->mPlaceNameID] << " " << mNameID << std::endl;
         if(header->mPlaceNameID == mNameID){
-            matrixIndices.push_back(header->mMatrixID);
+            matrixIndices.push_back({header->mMatrixID, header});
         }
     }
 
     //if(matrixIndices.)
 
-    for(auto matrixIndex : matrixIndices){
+    for(auto [matrixIndex, header] : matrixIndices){
         mMatrices.push_back(std::make_shared<Matrix>());
-        mMatrices.back()->Load(mMatrixArchive->GetFileByIndex(matrixIndex), mMapChunkArchive, mChunkHeaders);
+        mMatrices.back()->Load(mMatrixArchive->GetFileByIndex(matrixIndex), mMapChunkArchive, mChunkHeaders, header);
     }
+
+    SetActiveMatrix(0);
 
 }
 
 void MapManager::Draw(glm::mat4 v){
-    if(mMatrices.size() > 0) mMatrices[mActiveMatrix]->Draw(v);
+    if(mMatrices.size() > 0) mMatrices[mActiveMatrix]->Draw(v, mNameID);
 }

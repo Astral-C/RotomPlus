@@ -3,17 +3,18 @@
 Matrix::Matrix(){}
 Matrix::~Matrix(){}
 
-void Matrix::Draw(glm::mat4 v){
+void Matrix::Draw(glm::mat4 v, uint32_t placeNameID){
     for (uint8_t y = 0; y < mHeight; y++){
         for (uint8_t x = 0; x < mWidth; x++){
-            if(auto chunk = mEntries[(y * mWidth) + x].mChunk.lock()){
+            auto chunk = mEntries[(y * mWidth) + x].mChunk.lock();
+            if(mEntries[(y * mWidth) + x].mChunk.lock() && mEntries[(y * mWidth) + x].mChunkHeader.lock() && mEntries[(y * mWidth) + x].mChunkHeader.lock()->mPlaceNameID == placeNameID){
                 chunk->Draw(x, y, mEntries[(y * mWidth) + x].mHeight, v);
             }
         }
     }
 }
 
-void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr<Palkia::Nitro::Archive> fieldDataArchive, std::vector<std::shared_ptr<MapChunkHeader>>& mHeaders){
+void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr<Palkia::Nitro::Archive> fieldDataArchive, std::vector<std::shared_ptr<MapChunkHeader>>& mHeaders, std::shared_ptr<MapChunkHeader> matrixHeader){
     bStream::CMemoryStream stream(matrixData->GetData(), matrixData->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     
     mWidth = stream.readUInt8();
@@ -37,7 +38,7 @@ void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr
     } else {
         for (uint8_t y = 0; y < mHeight; y++){
             for (uint8_t x = 0; x < mWidth; x++){
-                mEntries[(y * mWidth) + x].mChunkHeader = mHeaders.front();
+                mEntries[(y * mWidth) + x].mChunkHeader = matrixHeader;
             }
         }
     }
