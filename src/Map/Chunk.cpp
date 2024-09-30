@@ -5,6 +5,8 @@
 #include "Map/Chunk.hpp"
 #include "Util.hpp"
 
+static uint32_t mModelId = 1;
+
 namespace MapGraphicsHandler {
     std::map<uint16_t, Palkia::Formats::NSBMD*> mLoadedChunkModels;
     std::map<uint16_t, Palkia::Formats::NSBMD*> mLoadedModels;
@@ -78,14 +80,23 @@ void MapChunk::LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::sh
 void MapChunk::Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v){
     glm::mat4 chunkTransform = v * glm::translate(glm::mat4(1.0f), glm::vec3(cx * 512, cz, cy * 512));
     if(MapGraphicsHandler::mLoadedChunkModels[mID] != nullptr){
-        MapGraphicsHandler::mLoadedChunkModels[mID]->Render(chunkTransform);
+        MapGraphicsHandler::mLoadedChunkModels[mID]->Render(chunkTransform, 0);
     }
 
     for(auto building : mBuildings){
         glm::mat4 modelTransform = v * glm::translate(glm::mat4(1.0f), glm::vec3((cx * 512) + building.x, cz + building.y, (cy * 512) + building.z));
-        if(MapGraphicsHandler::mLoadedModels[building.mModelID] != nullptr) MapGraphicsHandler::mLoadedModels[building.mModelID]->Render(modelTransform);
+        if(MapGraphicsHandler::mLoadedModels[building.mModelID] != nullptr) MapGraphicsHandler::mLoadedModels[building.mModelID]->Render(modelTransform, building.mPickID);
     }
 
+}
+
+Building* MapChunk::Select(uint32_t id){
+    for(int i = 0; i < mBuildings.size(); i++){
+        if(id != 0 && id == mBuildings[i].mPickID){
+            return &mBuildings[i];
+        }
+    }
+    return nullptr;
 }
 
 MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
@@ -112,6 +123,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
         b.rx = Palkia::fixed(stream.readInt32());
         b.ry = Palkia::fixed(stream.readInt32());
         b.rz = Palkia::fixed(stream.readInt32());
+        b.mPickID = mModelId++;
         stream.skip(0x30 - 28);
         mBuildings.push_back(b);        
     }

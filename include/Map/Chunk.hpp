@@ -36,6 +36,7 @@ struct Building {
     uint32_t mModelID;
     float x, y, z;
     float rx, ry, rz;
+    uint32_t mPickID { 0 };
 };
 
 class MapChunk {
@@ -44,7 +45,22 @@ class MapChunk {
     std::vector<Building> mBuildings {};
     std::vector<uint8_t> mModelData {};
 public:
+
+    Building* Select(uint32_t id);
+
     void LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::shared_ptr<Palkia::Nitro::Archive> buildModels);
+
+    void RemoveBuilding(Building* b) {
+        for(int i = 0; i < mBuildings.size(); i++) {
+            if(&mBuildings[i] == b){
+                std::cout << "Found it! Removing..." << std::endl;
+                mBuildings.erase(mBuildings.begin() + i);
+                break;
+            }
+        }
+    }
+
+    Building* AddBuilding(Building b) { mBuildings.push_back(b); return &mBuildings.back(); }
 
     void Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v);
 

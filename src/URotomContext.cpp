@@ -145,6 +145,7 @@ void URotomContext::Render(float deltaTime) {
 				if(ImGui::IsItemClicked(0)){
 					mCurrentLocation = zone;
 					mCurrentMatrixIdx = 0;
+					mSelectedBuilding = nullptr;
 					mMapManager.LoadZone(zoneIdx);
 				}
 			}
@@ -221,7 +222,7 @@ void URotomContext::Render(float deltaTime) {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 			glBindTexture(GL_TEXTURE_2D, mPickTex);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, (uint32_t)winSize.x, (uint32_t)winSize.y, 0, GL_RED_INTEGER, GL_INT, nullptr);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, (uint32_t)winSize.x, (uint32_t)winSize.y, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -275,24 +276,49 @@ void URotomContext::Render(float deltaTime) {
 			glPixelStorei(GL_PACK_ALIGNMENT, 1);
 			glReadBuffer(GL_COLOR_ATTACHMENT1);
 			uint32_t id = 0xFFFFFFFF;
-			glReadPixels(static_cast<GLint>(pickPos.x), static_cast<GLint>(pickPos.y), 1, 1, GL_RED_INTEGER, GL_INT, (void*)&id);
+			glReadPixels(static_cast<GLint>(pickPos.x), static_cast<GLint>(pickPos.y), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, (void*)&id);
+
+			std::cout << "ID Select was " << std::hex << id << std::dec << std::endl; 
 
 			if(id != 0){
-				// selection made on nsbmds!!
+				if(mMapManager.GetActiveMatrix() != nullptr){
+					auto result = mMapManager.GetActiveMatrix()->Select(id);
+					if(result.first != nullptr){
+						mSelectedBuilding = result.first;
+						mSelectedChunk.x = result.second.first;
+						mSelectedChunk.y = result.second.second;
+					}
+				}
+			} else {
+				mSelectedBuilding = nullptr;
 			}
 
-			ImGuizmo::BeginFrame();
-			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-			ImGuizmo::SetRect(cursorPos.x, cursorPos.y, winSize.x, winSize.y);
-
-			// gizmo operation on selected
-			//if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
-			//		object->mTransform = glm::inverse(zoneTransform) * transform;
-			//}
-
-			// [veebs]: Fix this, imguizmo update broke it
 
 		}
+
+		ImGuizmo::BeginFrame();
+		ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+		ImGuizmo::SetRect(cursorPos.x, cursorPos.y, winSize.x, winSize.y);
+
+		if(mSelectedBuilding != nullptr){
+			glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(mSelectedBuilding->x + (512 * mSelectedChunk.x), mSelectedBuilding->y, mSelectedBuilding->z + (512 * mSelectedChunk.y)));
+			glm::mat4 delta(1.0f);
+			if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
+				glm::vec4 newPos = transform[3];
+				mSelectedBuilding->x = newPos.x - (512 * mSelectedChunk.x);
+				mSelectedBuilding->y = newPos.y;
+				mSelectedBuilding->z = newPos.z - (512 * mSelectedChunk.y);
+
+			}
+			
+		}
+
+		// gizmo operation on selected
+		//if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
+		//		object->mTransform = glm::inverse(zoneTransform) * transform;
+		//}
+
+		// [veebs]: Fix this, imguizmo update broke it
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

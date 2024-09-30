@@ -14,6 +14,34 @@ void Matrix::Draw(glm::mat4 v, uint32_t placeNameID){
     }
 }
 
+Building* Matrix::MoveBuilding(Building* building, uint32_t cx, uint32_t cy, uint32_t ncx, uint32_t ncy){
+    auto oldChunk = mEntries[(cy * mWidth) + cx].mChunk.lock();
+    auto newChunk = mEntries[(ncy * mWidth) + ncx].mChunk.lock();
+
+    Building b = *building;
+
+    if(oldChunk) oldChunk->RemoveBuilding(building);
+    if(newChunk){
+        return newChunk->AddBuilding(b);
+    }
+    return nullptr; // this shouldnt happen
+}
+
+std::pair<Building*, std::pair<uint8_t, uint8_t>> Matrix::Select(uint32_t id){
+    for (uint8_t y = 0; y < mHeight; y++){
+        for (uint8_t x = 0; x < mWidth; x++){
+            auto chunk = mEntries[(y * mWidth) + x].mChunk.lock();
+            if(mEntries[(y * mWidth) + x].mChunk.lock()){
+                Building* ptr = chunk->Select(id);
+                if(ptr != nullptr){
+                    return { ptr, {x, y}};
+                }
+            }
+        }
+    }
+    return {nullptr, {0,0}};
+}
+
 void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr<Palkia::Nitro::Archive> fieldDataArchive, std::vector<std::shared_ptr<MapChunkHeader>>& mHeaders, std::shared_ptr<MapChunkHeader> matrixHeader){
     bStream::CMemoryStream stream(matrixData->GetData(), matrixData->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     

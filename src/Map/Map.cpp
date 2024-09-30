@@ -70,6 +70,10 @@ void MapManager::SetActiveMatrix(uint32_t index){
 
 }
 
+//Building* MapManager::Select(uint32_t id){
+//    return mMatrices[mActiveMatrix]->Select(id);   
+//}
+
 void MapManager::LoadZone(uint32_t nameID){
     // check if a map is already loaded, then save + clear
     mMatrices.clear();

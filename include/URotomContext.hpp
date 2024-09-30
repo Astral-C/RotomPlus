@@ -5,6 +5,7 @@
 #include <vector>
 #include <filesystem>
 #include <memory>
+#include <glm/glm/glm.hpp>
 
 #include <NDS/System/Rom.hpp>
 #include <NDS/System/Archive.hpp>
@@ -16,7 +17,9 @@ class URotomContext {
 	std::array<std::string, 3> mEditorTools = {"Map Editor", "Encounter Editor", "Trainer Editor"};
 	std::vector<std::string> mLocationNames = {};
 	std::string mCurrentLocation = "";
-
+	glm::vec2 mPrevChunk = {0,0};
+	glm::vec2 mSelectedChunk = {0,0};
+	Building* mSelectedBuilding { nullptr };
 	MapManager mMapManager;
 
 	std::unique_ptr<Palkia::Nitro::Rom> mRom = nullptr;
