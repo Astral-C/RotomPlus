@@ -136,31 +136,26 @@ void URotomContext::Render(float deltaTime) {
 		ImGui::Separator();
 		
 		// Render zones as listed by names list
-		int zoneIdx = 0;
-		for(auto zone : mLocationNames){
-			if(mCurrentLocation == zone){
-				ImGui::TextColored(ImVec4(0.5, 1.0, 0.5, 1.0), zone.data());
-			} else {
-				ImGui::Text(zone.data());
-				if(ImGui::IsItemClicked(0)){
-					mCurrentLocation = zone;
-					mCurrentMatrixIdx = 0;
-					mSelectedBuilding = nullptr;
-					mMapManager.LoadZone(zoneIdx);
-				}
+		if(ImGui::BeginCombo("##locations", mLocationNames[mCurrentLocationIdx].data())){
+			for(uint32_t i = 0; i < mLocationNames.size(); i++){
+					bool is_selected = (mCurrentLocationIdx == i);
+					if (ImGui::Selectable(mLocationNames[i].data(), is_selected)){						
+						mCurrentLocation = mLocationNames[i];
+						mCurrentMatrixIdx = 0;
+						mSelectedBuilding = nullptr;
+						mMapManager.LoadZone(i);
+						mCurrentLocationIdx = i;
+					}
+					if (is_selected) ImGui::SetItemDefaultFocus();
 			}
-			zoneIdx++;
+			ImGui::EndCombo();
 		}
-
-
-	ImGui::End();
-
-	ImGui::SetNextWindowClass(&mainWindowOverride);
-	ImGui::Begin("chunkWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-		ImGui::Text("Current Zone");
 		ImGui::Separator();
+		ImGui::NewLine();
+		ImGui::NewLine();		
 
 		ImGui::Text("Map Matrices");
+		ImGui::Separator();
 		auto matrices = mMapManager.GetMatrices();
 		if(matrices.size() > 0){
 			if(ImGui::BeginCombo("##mapMatrices", matrices[mCurrentMatrixIdx]->GetName().data())){
@@ -170,15 +165,17 @@ void URotomContext::Render(float deltaTime) {
 						mMapManager.SetActiveMatrix(i);
 						mCurrentMatrixIdx = i;
 					}
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
+					if (is_selected) ImGui::SetItemDefaultFocus();
 				}
 				ImGui::EndCombo();
 			}
 		}
 
-		ImGui::Separator();
-		ImGui::NewLine();
+
+	ImGui::End();
+
+	ImGui::SetNextWindowClass(&mainWindowOverride);
+	ImGui::Begin("chunkWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 		ImGui::Text("Current Chunk");
 		ImGui::Separator();
 		

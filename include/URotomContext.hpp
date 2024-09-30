@@ -15,7 +15,8 @@ class URotomContext {
 	
 	uint32_t mCurrentMatrixIdx { 0 };
 	std::array<std::string, 3> mEditorTools = {"Map Editor", "Encounter Editor", "Trainer Editor"};
-	std::vector<std::string> mLocationNames = {};
+	std::vector<std::string> mLocationNames = {"(None)"};
+	int mCurrentLocationIdx { 0 };
 	std::string mCurrentLocation = "";
 	glm::vec2 mPrevChunk = {0,0};
 	glm::vec2 mSelectedChunk = {0,0};
