@@ -1,3 +1,5 @@
-# Rotom
+## Rotom Plus
 
-A WIP Map Editor for Pokemon D/P/PT - Now in C++ Flavor
+A personal map making/modding tool for the DS Pokemon Titles
+
+![screenshot](preview.png)
