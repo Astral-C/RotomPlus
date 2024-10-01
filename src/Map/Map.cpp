@@ -59,6 +59,8 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
 }
 
 void MapManager::SetActiveMatrix(uint32_t index){
+    uint16_t encounterID = 0xFFFF;
+    
     mActiveMatrix = index;
     MapGraphicsHandler::ClearModelCache();
     if(mMatrices.size() == 0) return;
@@ -67,11 +69,18 @@ void MapManager::SetActiveMatrix(uint32_t index){
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
         if(chunk.mChunk.lock() && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
             //mAreas[chunkHeaderLocked->mAreaID] .mMapTileset)
+            
+            if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
             chunkLocked->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
     }
 
+    // load encounter data
+    if(encounterID != 0xFFFF){
+        auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
+        mEncounters = LoadEncounterFile(encounterFile);
+    }
 }
 
 //Building* MapManager::Select(uint32_t id){
@@ -86,22 +95,11 @@ void MapManager::LoadZone(uint32_t nameID){
     MapGraphicsHandler::ClearModelCache();
 
     std::vector<std::pair<uint32_t, std::shared_ptr<MapChunkHeader>>> matrixIndices = {};
-    uint16_t encounterID = 0xFFFF;
     for(auto header : mChunkHeaders){
         std::cout << locationNames[header->mPlaceNameID] << " " << mNameID << std::endl;
         if(header->mPlaceNameID == mNameID){
-            if(encounterID == 0xFFFF && header->mEncDataID != 0xFFFF) encounterID = header->mEncDataID;
             matrixIndices.push_back({header->mMatrixID, header});
         }
-    }
-
-    // load encounter data
-    auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
-    bStream::CMemoryStream encounterStream(encounterFile->GetData(), encounterFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-    mEncounters.mWalkingEncounterRate = encounterStream.readUInt32();
-    for(int i = 0; i < 12; i++){
-        mEncounters.mWalkingLevel[i] = encounterStream.readUInt32();
-        mEncounters.mWalkingEncounters[i] = encounterStream.readUInt32();
     }
 
     //if(matrixIndices.)

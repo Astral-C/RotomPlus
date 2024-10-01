@@ -322,10 +322,354 @@ void URotomContext::Render(float deltaTime) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
-		if(mCurrentTool == "Encounter Editor"){
+		if(mCurrentTool == "Encounter Editor" && mRom != nullptr){
+			ImGuiStyle& style = ImGui::GetStyle();
+			ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {5, 5});
+			ImGui::BeginTable("##encounterData", 5, ImGuiTableFlags_Borders);
+			ImGui::TableSetupColumn("Walking");
+			ImGui::TableSetupColumn("Surfing");
+			ImGui::TableSetupColumn("Old Rod");
+			ImGui::TableSetupColumn("Good Rod");
+			ImGui::TableSetupColumn("Super Rod");
+			ImGui::TableHeadersRow();
+
+			std::array<int, 12> slotTitles = {20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1};
+			std::array<int, 5> fiveSlotTitles = {20, 10, 5, 4, 1};
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Text("Rate");
+			ImGui::SameLine();
+			ImGui::InputInt("##walkingEncounterRate", (int*)&mMapManager.mEncounters.mWalkingEncounterRate);
+			ImGui::TableNextColumn();
+			
+			ImGui::Text("Rate");
+			ImGui::SameLine();
+			ImGui::InputInt("##surfingEncounterRate", (int*)&mMapManager.mEncounters.mSurfEncounterRate);
+			ImGui::TableNextColumn();
+			
+			ImGui::Text("Rate");
+			ImGui::SameLine();
+			ImGui::InputInt("##oldRodEncounterRate", (int*)&mMapManager.mEncounters.mOldRodRate);
+			ImGui::TableNextColumn();
+			
+			ImGui::Text("Rate");
+			ImGui::SameLine();
+			ImGui::InputInt("##goodRodEncounterRate", (int*)&mMapManager.mEncounters.mGoodRodRate);
+			ImGui::TableNextColumn();
+
+			ImGui::Text("Rate");
+			ImGui::SameLine();
+			ImGui::InputInt("##superRodEncounterRate", (int*)&mMapManager.mEncounters.mSuperRodRate);
+
+
 			for(int x = 0; x < 12; x++){
-				ImGui::Text(PokemonNames[mMapManager.mEncounters.mWalkingEncounters[x]].data());
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Text(std::format("{}%%", slotTitles[x]).data());
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Walk", x).data(), PokemonNames[mMapManager.mEncounters.mWalking[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mWalking[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mWalking[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+				
+				ImGui::Text("Level");
+				ImGui::SameLine();
+				ImGui::InputInt(std::format("##pokeSlot{}WalkLevel", x).data(), (int*)&mMapManager.mEncounters.mWalkingLevel[x]);
+				ImGui::NewLine();
+
+				if(x < 5){
+					ImGui::TableNextColumn();
+					ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
+					ImGui::SameLine();
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Surf", x).data(), PokemonNames[mMapManager.mEncounters.mSurf[x]].data())){
+						for(uint32_t i = 0; i < PokemonNames.size(); i++){
+								bool is_selected = (mMapManager.mEncounters.mSurf[x] == i);
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									mMapManager.mEncounters.mSurf[x] = i;
+								}
+								if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::Text("Max Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}SurfMaxLevel", x).data(), (int*)&mMapManager.mEncounters.mSurfMaxLevels[x]);
+
+					ImGui::Text("Min Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}SurfMinLevel", x).data(), (int*)&mMapManager.mEncounters.mSurfMinLevels[x]);
+
+					ImGui::TableNextColumn();
+					ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
+					ImGui::SameLine();
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}OldRod", x).data(), PokemonNames[mMapManager.mEncounters.mOldRod[x]].data())){
+						for(uint32_t i = 0; i < PokemonNames.size(); i++){
+								bool is_selected = (mMapManager.mEncounters.mOldRod[x] == i);
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									mMapManager.mEncounters.mOldRod[x] = i;
+								}
+								if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::Text("Max Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}OldRodMaxLevel", x).data(), (int*)&mMapManager.mEncounters.mOldMaxLevels[x]);
+
+					ImGui::Text("Min Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}OldRodMinLevel", x).data(), (int*)&mMapManager.mEncounters.mOldMinLevels[x]);
+
+					ImGui::TableNextColumn();
+					ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
+					ImGui::SameLine();
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}GoodRod", x).data(), PokemonNames[mMapManager.mEncounters.mGoodRod[x]].data())){
+						for(uint32_t i = 0; i < PokemonNames.size(); i++){
+								bool is_selected = (mMapManager.mEncounters.mGoodRod[x] == i);
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									mMapManager.mEncounters.mGoodRod[x] = i;
+								}
+								if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::Text("Max Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}GoodRodMaxLevel", x).data(), (int*)&mMapManager.mEncounters.mGoodRodMaxLevels[x]);
+
+					ImGui::Text("Min Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}GoodRodMinLevel", x).data(), (int*)&mMapManager.mEncounters.mGoodRodMinLevels[x]);
+
+					ImGui::TableNextColumn();
+					ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
+					ImGui::SameLine();
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}SuperRod", x).data(), PokemonNames[mMapManager.mEncounters.mSuperRod[x]].data())){
+						for(uint32_t i = 0; i < PokemonNames.size(); i++){
+								bool is_selected = (mMapManager.mEncounters.mSuperRod[x] == i);
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									mMapManager.mEncounters.mSuperRod[x] = i;
+								}
+								if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::Text("Max Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}SuperRodMaxLevel", x).data(), (int*)&mMapManager.mEncounters.mSuperRodMaxLevels[x]);
+
+					ImGui::Text("Min Level");
+					ImGui::SameLine();
+					ImGui::InputInt(std::format("##pokeSlot{}SuperRodMinLevel", x).data(), (int*)&mMapManager.mEncounters.mSuperRodMinLevels[x]);
+
+				} else {
+					for(int i = 0; i < 4; i++) ImGui::TableNextColumn();
+				}
+				//PokemonNames[mMapManager.mEncounters.mWalkingEncounters[x]].data()
 			}
+
+			ImGui::EndTable();
+
+			auto windowWidth = ImGui::GetWindowSize().x;
+			auto textWidth = ImGui::CalcTextSize("Time Based").x;
+
+			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+			ImGui::Text("Time Based");
+
+			ImGui::BeginTable("##timeEncounterData", 3, ImGuiTableFlags_Borders);
+			ImGui::TableSetupColumn("Morning");
+			ImGui::TableSetupColumn("Night");
+			ImGui::TableSetupColumn("Swarm");
+			ImGui::TableHeadersRow();
+			ImGui::TableNextRow();
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("10%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Morning", x).data(), PokemonNames[mMapManager.mEncounters.mMorningPokemon[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mMorningPokemon[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mMorningPokemon[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("10%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Night", x).data(), PokemonNames[mMapManager.mEncounters.mNightPokemon[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mNightPokemon[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mNightPokemon[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("20%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Swarm", x).data(), PokemonNames[mMapManager.mEncounters.mNightPokemon[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mNightPokemon[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mNightPokemon[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+			ImGui::EndTable();
+
+			textWidth = ImGui::CalcTextSize("Poke Radar").x;
+
+			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+			ImGui::Text("Poke Radar");
+
+//			ImGui::TableSetupColumn("Radar");
+			ImGui::BeginTable("##radarEncounters", 4, ImGuiTableFlags_Borders);
+			ImGui::TableSetupColumn("10%");
+			ImGui::TableSetupColumn("10%");
+			ImGui::TableSetupColumn("1%");
+			ImGui::TableSetupColumn("1%");
+			ImGui::TableHeadersRow();
+			ImGui::TableNextRow();
+
+			for(int x = 0; x < 4; x++){
+				ImGui::TableNextColumn();
+				if(ImGui::BeginCombo(std::format("##pokeSlotRadar{}", x).data(), PokemonNames[mMapManager.mEncounters.mRadarPokemon[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mRadarPokemon[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mRadarPokemon[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::EndTable();
+
+			textWidth = ImGui::CalcTextSize("Dual Cart Encounters").x;
+
+			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+			ImGui::Text("Dual Cart Encounters");
+
+
+			ImGui::BeginTable("##encounterDataDualCart", 5, ImGuiTableFlags_Borders);
+			ImGui::TableSetupColumn("Ruby");
+			ImGui::TableSetupColumn("Sapphire");
+			ImGui::TableSetupColumn("Emerald");
+			ImGui::TableSetupColumn("Fire Red");
+			ImGui::TableSetupColumn("Leaf Green");
+			ImGui::TableHeadersRow();
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("4%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Ruby", x).data(), PokemonNames[mMapManager.mEncounters.mRuby[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mRuby[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mRuby[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("4%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Sapphire", x).data(), PokemonNames[mMapManager.mEncounters.mSapphire[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mSapphire[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mSapphire[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("4%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Emerald", x).data(), PokemonNames[mMapManager.mEncounters.mEmerald[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mEmerald[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mEmerald[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("4%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}FireRed", x).data(), PokemonNames[mMapManager.mEncounters.mFireRed[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mFireRed[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mFireRed[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::TableNextColumn();
+			for(int x = 0; x < 2; x++){
+				ImGui::Text("4%%");
+				ImGui::SameLine();
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}LeafGreen", x).data(), PokemonNames[mMapManager.mEncounters.mLeafGreen[x]].data())){
+					for(uint32_t i = 0; i < PokemonNames.size(); i++){
+							bool is_selected = (mMapManager.mEncounters.mLeafGreen[x] == i);
+							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								mMapManager.mEncounters.mLeafGreen[x] = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::EndTable();
+			ImGui::PopStyleVar();
 		}
 
 	ImGui::End();
