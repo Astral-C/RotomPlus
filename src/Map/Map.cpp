@@ -33,6 +33,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     auto buildModelFile = rom->GetFile("fielddata/build_model/build_model.narc");
     auto mapMatrixFile = rom->GetFile("fielddata/mapmatrix/map_matrix.narc");
     auto eventDataFile = rom->GetFile("fielddata/eventdata/zone_event.narc");
+    auto encounterDataFile = rom->GetFile("fielddata/encountdata/pl_enc_data.narc");
 
     auto stream = bStream::CMemoryStream(mapChunkFile->GetData(), mapChunkFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mMapChunkArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
@@ -51,6 +52,9 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     
     stream = bStream::CMemoryStream(eventDataFile->GetData(), eventDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mEventDataArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
+
+    stream = bStream::CMemoryStream(encounterDataFile->GetData(), encounterDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    mEncounterDataArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
 
 }
 
@@ -82,11 +86,22 @@ void MapManager::LoadZone(uint32_t nameID){
     MapGraphicsHandler::ClearModelCache();
 
     std::vector<std::pair<uint32_t, std::shared_ptr<MapChunkHeader>>> matrixIndices = {};
+    uint16_t encounterID = 0xFFFF;
     for(auto header : mChunkHeaders){
         std::cout << locationNames[header->mPlaceNameID] << " " << mNameID << std::endl;
         if(header->mPlaceNameID == mNameID){
+            if(encounterID == 0xFFFF && header->mEncDataID != 0xFFFF) encounterID = header->mEncDataID;
             matrixIndices.push_back({header->mMatrixID, header});
         }
+    }
+
+    // load encounter data
+    auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
+    bStream::CMemoryStream encounterStream(encounterFile->GetData(), encounterFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    mEncounters.mWalkingEncounterRate = encounterStream.readUInt32();
+    for(int i = 0; i < 12; i++){
+        mEncounters.mWalkingLevel[i] = encounterStream.readUInt32();
+        mEncounters.mWalkingEncounters[i] = encounterStream.readUInt32();
     }
 
     //if(matrixIndices.)

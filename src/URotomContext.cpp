@@ -9,6 +9,7 @@
 #include "ImGuizmo.h"
 #include "IconsForkAwesome.h"
 #include "Text.hpp"
+#include "PokemonData.hpp"
 #include <algorithm>
 #include <format>
 
@@ -190,134 +191,142 @@ void URotomContext::Render(float deltaTime) {
 		ImGui::BeginTabBar("mapToolbar", ImGuiTabBarFlags_Reorderable);
 			for(auto tool : mEditorTools){
 				if(ImGui::BeginTabItem(tool.data())){
-					//Switch tool
+					mCurrentTool = tool;
 					ImGui::EndTabItem();
 				}
 			}
 		ImGui::EndTabBar();
 
-		ImVec2 winSize = ImGui::GetContentRegionAvail();
-		ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+		if(mCurrentTool == "Map Editor"){
+			ImVec2 winSize = ImGui::GetContentRegionAvail();
+			ImVec2 cursorPos = ImGui::GetCursorScreenPos();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
 
-		if(winSize.x != mPrevWinWidth || winSize.y != mPrevWinHeight){
-			glDeleteTextures(1, &mViewTex);
-			glDeleteTextures(1, &mPickTex);
-			glDeleteRenderbuffers(1, &mRbo);
+			if(winSize.x != mPrevWinWidth || winSize.y != mPrevWinHeight){
+				glDeleteTextures(1, &mViewTex);
+				glDeleteTextures(1, &mPickTex);
+				glDeleteRenderbuffers(1, &mRbo);
 
-			glGenRenderbuffers(1, &mRbo);
-			glBindRenderbuffer(GL_RENDERBUFFER, mRbo);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (uint32_t)winSize.x, (uint32_t)winSize.y);
+				glGenRenderbuffers(1, &mRbo);
+				glBindRenderbuffer(GL_RENDERBUFFER, mRbo);
+				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (uint32_t)winSize.x, (uint32_t)winSize.y);
 
-			glGenTextures(1, &mViewTex);
-			glGenTextures(1, &mPickTex);
+				glGenTextures(1, &mViewTex);
+				glGenTextures(1, &mPickTex);
 
-			glBindTexture(GL_TEXTURE_2D, mViewTex);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (uint32_t)winSize.x, (uint32_t)winSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glBindTexture(GL_TEXTURE_2D, mViewTex);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (uint32_t)winSize.x, (uint32_t)winSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-			glBindTexture(GL_TEXTURE_2D, mPickTex);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, (uint32_t)winSize.x, (uint32_t)winSize.y, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glBindTexture(GL_TEXTURE_2D, mPickTex);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, (uint32_t)winSize.x, (uint32_t)winSize.y, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mViewTex, 0);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mPickTex, 0);
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRbo);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mViewTex, 0);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mPickTex, 0);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRbo);
 
-			GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-			glDrawBuffers(2, attachments);
-		
-		}
-		
-		glViewport(0, 0, (uint32_t)winSize.x, (uint32_t)winSize.y);
-
-		
-		glClearColor(0.100f, 0.261f, 0.402f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		int32_t unused = 0;
-		glClearTexImage(mPickTex, 0, GL_RED_INTEGER, GL_INT, &unused);
-
-		mPrevWinWidth = winSize.x;
-		mPrevWinHeight = winSize.y;
-		
-		glm::mat4 projection, view;
-		projection = mCamera.GetProjectionMatrix();
-		view = mCamera.GetViewMatrix();
-
-
-		// Render Models
-		glEnable(GL_DEPTH_TEST);
-		mMapManager.Draw(projection * view);
-
-		cursorPos = ImGui::GetCursorScreenPos();
-		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mViewTex)), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});
-
-		if(ImGui::IsWindowFocused()){
-			mViewportIsFocused = true;
-		} else {
-			mViewportIsFocused = false;
-		}
-
-		if(ImGui::IsItemClicked(0) && !ImGuizmo::IsOver()){
-			ImVec2 mousePos = ImGui::GetMousePos();
+				GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+				glDrawBuffers(2, attachments);
 			
-			ImVec2 pickPos = {
-				mousePos.x - cursorPos.x,
-				winSize.y - (mousePos.y - cursorPos.y)
-			};
+			}
+			
+			glViewport(0, 0, (uint32_t)winSize.x, (uint32_t)winSize.y);
 
-			glPixelStorei(GL_PACK_ALIGNMENT, 1);
-			glReadBuffer(GL_COLOR_ATTACHMENT1);
-			uint32_t id = 0xFFFFFFFF;
-			glReadPixels(static_cast<GLint>(pickPos.x), static_cast<GLint>(pickPos.y), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, (void*)&id);
+			
+			glClearColor(0.100f, 0.261f, 0.402f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			std::cout << "ID Select was " << std::hex << id << std::dec << std::endl; 
+			int32_t unused = 0;
+			glClearTexImage(mPickTex, 0, GL_RED_INTEGER, GL_INT, &unused);
 
-			if(id != 0){
-				if(mMapManager.GetActiveMatrix() != nullptr){
-					auto result = mMapManager.GetActiveMatrix()->Select(id);
-					if(result.first != nullptr){
-						mSelectedBuilding = result.first;
-						mSelectedChunk.x = result.second.first;
-						mSelectedChunk.y = result.second.second;
-					}
-				}
+			mPrevWinWidth = winSize.x;
+			mPrevWinHeight = winSize.y;
+			
+			glm::mat4 projection, view;
+			projection = mCamera.GetProjectionMatrix();
+			view = mCamera.GetViewMatrix();
+
+
+			// Render Models
+			glEnable(GL_DEPTH_TEST);
+			mMapManager.Draw(projection * view);
+
+			cursorPos = ImGui::GetCursorScreenPos();
+			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mViewTex)), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});
+
+			if(ImGui::IsWindowFocused()){
+				mViewportIsFocused = true;
 			} else {
-				mSelectedBuilding = nullptr;
+				mViewportIsFocused = false;
 			}
 
+			if(ImGui::IsItemClicked(0) && !ImGuizmo::IsOver()){
+				ImVec2 mousePos = ImGui::GetMousePos();
+				
+				ImVec2 pickPos = {
+					mousePos.x - cursorPos.x,
+					winSize.y - (mousePos.y - cursorPos.y)
+				};
 
-		}
+				glPixelStorei(GL_PACK_ALIGNMENT, 1);
+				glReadBuffer(GL_COLOR_ATTACHMENT1);
+				uint32_t id = 0xFFFFFFFF;
+				glReadPixels(static_cast<GLint>(pickPos.x), static_cast<GLint>(pickPos.y), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, (void*)&id);
 
-		ImGuizmo::BeginFrame();
-		ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-		ImGuizmo::SetRect(cursorPos.x, cursorPos.y, winSize.x, winSize.y);
+				std::cout << "ID Select was " << std::hex << id << std::dec << std::endl; 
 
-		if(mSelectedBuilding != nullptr){
-			glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(mSelectedBuilding->x + (512 * mSelectedChunk.x), mSelectedBuilding->y, mSelectedBuilding->z + (512 * mSelectedChunk.y)));
-			glm::mat4 delta(1.0f);
-			if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
-				glm::vec4 newPos = transform[3];
-				mSelectedBuilding->x = newPos.x - (512 * mSelectedChunk.x);
-				mSelectedBuilding->y = newPos.y;
-				mSelectedBuilding->z = newPos.z - (512 * mSelectedChunk.y);
+				if(id != 0){
+					if(mMapManager.GetActiveMatrix() != nullptr){
+						auto result = mMapManager.GetActiveMatrix()->Select(id);
+						if(result.first != nullptr){
+							mSelectedBuilding = result.first;
+							mSelectedChunk.x = result.second.first;
+							mSelectedChunk.y = result.second.second;
+						}
+					}
+				} else {
+					mSelectedBuilding = nullptr;
+				}
+
 
 			}
-			
+
+			ImGuizmo::BeginFrame();
+			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+			ImGuizmo::SetRect(cursorPos.x, cursorPos.y, winSize.x, winSize.y);
+
+			if(mSelectedBuilding != nullptr){
+				glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(mSelectedBuilding->x + (512 * mSelectedChunk.x), mSelectedBuilding->y, mSelectedBuilding->z + (512 * mSelectedChunk.y)));
+				glm::mat4 delta(1.0f);
+				if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
+					glm::vec4 newPos = transform[3];
+					mSelectedBuilding->x = newPos.x - (512 * mSelectedChunk.x);
+					mSelectedBuilding->y = newPos.y;
+					mSelectedBuilding->z = newPos.z - (512 * mSelectedChunk.y);
+
+				}
+				
+			}
+
+			// gizmo operation on selected
+			//if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
+			//		object->mTransform = glm::inverse(zoneTransform) * transform;
+			//}
+
+			// [veebs]: Fix this, imguizmo update broke it
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
-		// gizmo operation on selected
-		//if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
-		//		object->mTransform = glm::inverse(zoneTransform) * transform;
-		//}
-
-		// [veebs]: Fix this, imguizmo update broke it
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		if(mCurrentTool == "Encounter Editor"){
+			for(int x = 0; x < 12; x++){
+				ImGui::Text(PokemonNames[mMapManager.mEncounters.mWalkingEncounters[x]].data());
+			}
+		}
 
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -383,11 +392,14 @@ void URotomContext::RenderMenuBar() {
 				bStream::CMemoryStream msgArcStream(msgArchive->GetData(), msgArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				
-				auto locationNamesArc = Palkia::Nitro::Archive(msgArcStream);
-				auto locationNamesFile = locationNamesArc.GetFileByIndex(433);
+				auto msgs = Palkia::Nitro::Archive(msgArcStream);
+				auto locationNamesFile = msgs.GetFileByIndex(433);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				mLocationNames = Text::DecodeStringList(locationNamesStream);
+
+				auto pokemonNamesFile = msgs.GetFileByIndex(412);
+				LoadPokemonNames(pokemonNamesFile);
 
 				mMapManager.Init(mRom.get(), mLocationNames);
 

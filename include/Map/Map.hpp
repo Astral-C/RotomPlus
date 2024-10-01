@@ -6,6 +6,7 @@
 #include "Area.hpp"
 #include "Chunk.hpp"
 #include "Matrix.hpp"
+#include "Encounters.hpp"
 #include "NDS/System/Archive.hpp"
 #include "NDS/System/Rom.hpp"
 #include "NDS/Assets/NSBTX.hpp"
@@ -17,14 +18,16 @@ class MapManager {
     std::vector<std::shared_ptr<Matrix>> mMatrices;
     std::vector<std::shared_ptr<MapChunkHeader>> mChunkHeaders;
 
-    std::shared_ptr<Palkia::Nitro::Archive> mMapTexArchive    = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mMatrixArchive    = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mAreaDataArchive  = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mBuildingArchive  = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mMapChunkArchive  = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMapTexArchive        = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMatrixArchive        = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mAreaDataArchive      = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mBuildingArchive      = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMapChunkArchive      = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive     = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mEncounterDataArchive = nullptr;
 
 public:
+    Encounter mEncounters;
     std::vector<std::shared_ptr<Matrix>>& GetMatrices() { return mMatrices; }
     std::vector<std::shared_ptr<MapChunkHeader>>& GetChunkHeaders() { return mChunkHeaders; }
     
