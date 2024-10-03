@@ -726,7 +726,7 @@ void URotomContext::RenderMenuBar() {
 			std::string FilePath = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::cout << FilePath << std::endl;
 
-			try {
+			//try {
 				// load rom here
 				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
 
@@ -737,6 +737,11 @@ void URotomContext::RenderMenuBar() {
 
 				
 				auto msgs = Palkia::Nitro::Archive(msgArcStream);
+
+				Palkia::Nitro::Archive test(mRom->GetFS());
+				bStream::CFileStream romtest("test.narc", bStream::OpenMode::Out);
+				test.SaveArchive(romtest);
+
 				auto locationNamesFile = msgs.GetFileByIndex(433);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
@@ -747,13 +752,13 @@ void URotomContext::RenderMenuBar() {
 
 				mMapManager.Init(mRom.get(), mLocationNames);
 
-			}
-			catch (std::runtime_error e) {
-				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
-			}
-			catch (std::exception e) {
-				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
-			}
+			//}
+			//catch (std::runtime_error e) {
+			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
+			//}
+			//catch (std::exception e) {
+			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
+			//}
 
 			bIsFileDialogOpen = false;
 		} else {

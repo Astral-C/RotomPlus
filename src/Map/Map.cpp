@@ -14,7 +14,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     for(int i = 0; i < 570; i++){
         std::shared_ptr<MapChunkHeader> header = std::make_shared<MapChunkHeader>();
         header->Read(armStream);
-        std::cout << "Loading header with map name " << locations[header->mPlaceNameID] << " " << (uint)header->mPlaceNameID << " Area " << std::dec << (uint)header->mAreaID << std::endl;
+        //std::cout << "Loading header with map name " << locations[header->mPlaceNameID] << " " << (uint)header->mPlaceNameID << " Area " << std::dec << (uint)header->mAreaID << std::endl;
         areaCount = std::max(header->mAreaID, areaCount);
         mChunkHeaders.push_back(header);
     }
