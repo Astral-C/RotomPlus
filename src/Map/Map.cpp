@@ -5,7 +5,7 @@ std::vector<std::string> locationNames;
 
 void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> locations){
     locationNames = locations;
-    auto arm9 = rom->GetFile("arm9.bin");
+    auto arm9 = rom->GetFile("@arm9.bin");
     bStream::CMemoryStream armStream(arm9->GetData(), arm9->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     std::cout << "ARM9 Binary Size is 0x" << std::hex << arm9->GetSize() << std::dec << std::endl;
     armStream.seek(0xE601C);

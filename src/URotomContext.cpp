@@ -738,9 +738,7 @@ void URotomContext::RenderMenuBar() {
 				
 				auto msgs = Palkia::Nitro::Archive(msgArcStream);
 
-				Palkia::Nitro::Archive test(mRom->GetFS());
-				bStream::CFileStream romtest("test.narc", bStream::OpenMode::Out);
-				test.SaveArchive(romtest);
+				mRom->Save("test.nds");
 
 				auto locationNamesFile = msgs.GetFileByIndex(433);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
