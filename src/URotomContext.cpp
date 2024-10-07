@@ -170,6 +170,9 @@ void URotomContext::Render(float deltaTime) {
 				}
 				ImGui::EndCombo();
 			}
+			if(ImGui::Button("Save Current Matrix")){
+				mMapManager.SaveMatrix();
+			}
 		}
 
 
@@ -692,7 +695,7 @@ void URotomContext::RenderMenuBar() {
 			bIsFileDialogOpen = true;
 		}
 		if (ImGui::MenuItem(ICON_FK_FLOPPY_O " Save...")) {
-			
+			bIsSaveDialogOpen = true;
 		}
 
 		ImGui::Separator();
@@ -726,7 +729,7 @@ void URotomContext::RenderMenuBar() {
 			std::string FilePath = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::cout << FilePath << std::endl;
 
-			//try {
+			try {
 				// load rom here
 				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
 
@@ -738,8 +741,6 @@ void URotomContext::RenderMenuBar() {
 				
 				auto msgs = Palkia::Nitro::Archive(msgArcStream);
 
-				mRom->Save("test.nds");
-
 				auto locationNamesFile = msgs.GetFileByIndex(433);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
@@ -750,17 +751,49 @@ void URotomContext::RenderMenuBar() {
 
 				mMapManager.Init(mRom.get(), mLocationNames);
 
-			//}
-			//catch (std::runtime_error e) {
-			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
-			//}
-			//catch (std::exception e) {
-			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
-			//}
+			}
+			catch (std::runtime_error e) {
+				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
+			}
+			catch (std::exception e) {
+				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
+			}
 
 			bIsFileDialogOpen = false;
 		} else {
 			bIsFileDialogOpen = false;
+		}
+
+		ImGuiFileDialog::Instance()->Close();
+	}
+
+	if (bIsSaveDialogOpen) {
+		IGFD::FileDialogConfig config;
+		ImGuiFileDialog::Instance()->OpenDialog("SaveRomDialog", "Save Pokemon ROM", ".nds", config);
+	}
+
+	if (ImGuiFileDialog::Instance()->Display("SaveRomDialog")) {
+		if (ImGuiFileDialog::Instance()->IsOk()) {
+			std::string FilePath = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::cout << FilePath << std::endl;
+
+			try {
+				mMapManager.Save(mRom.get());
+
+				// save rom here
+				mRom->Save(FilePath);
+
+			}
+			catch (std::runtime_error e) {
+				std::cout << "Failed to save rom " << FilePath << "! Exception: " << e.what() << "\n";
+			}
+			catch (std::exception e) {
+				std::cout << "Failed to save rom " << FilePath << "! Exception: " << e.what() << "\n";
+			}
+
+			bIsSaveDialogOpen = false;
+		} else {
+			bIsSaveDialogOpen = false;
 		}
 
 		ImGuiFileDialog::Instance()->Close();

@@ -36,6 +36,8 @@ struct Building {
     uint32_t mModelID;
     float x, y, z;
     float rx, ry, rz;
+    float l, w, h;
+    uint32_t unk1, unk2;
     uint32_t mPickID { 0 };
 };
 
@@ -44,7 +46,10 @@ class MapChunk {
     std::array<std::pair<uint8_t, uint8_t>, 1024> mMovementPermissions {};
     std::vector<Building> mBuildings {};
     std::vector<uint8_t> mModelData {};
+    std::vector<uint8_t> mBDHCData {};
 public:
+
+    void Save(std::shared_ptr<Palkia::Nitro::Archive> archive);
 
     Building* Select(uint32_t id);
 

@@ -32,6 +32,10 @@ public:
     std::vector<std::shared_ptr<MapChunkHeader>>& GetChunkHeaders() { return mChunkHeaders; }
     
     void Init(Palkia::Nitro::Rom*,std::vector<std::string>); // load archives needed for map loading
+    void Save(Palkia::Nitro::Rom*);
+    
+    void SaveMatrix();
+
     std::shared_ptr<Matrix> GetActiveMatrix() { if(mMatrices.size() > 0) { return mMatrices[mActiveMatrix]; } else { return nullptr; } };
     void SetActiveMatrix(uint32_t);
     void LoadZone(uint32_t); // needs to pass some

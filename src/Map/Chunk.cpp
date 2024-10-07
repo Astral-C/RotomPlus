@@ -91,6 +91,7 @@ void MapChunk::Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v){
 }
 
 Building* MapChunk::Select(uint32_t id){
+    std::cout << "Selecting building in chunk ID " << mID << std::endl;
     for(int i = 0; i < mBuildings.size(); i++){
         if(id != 0 && id == mBuildings[i].mPickID){
             return &mBuildings[i];
@@ -123,9 +124,14 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
         b.rx = Palkia::fixed(stream.readInt32());
         b.ry = Palkia::fixed(stream.readInt32());
         b.rz = Palkia::fixed(stream.readInt32());
+        b.l = Palkia::fixed(stream.readUInt32());
+        b.w = Palkia::fixed(stream.readUInt32());
+        b.h = Palkia::fixed(stream.readUInt32());
+        b.unk1 = stream.readUInt32();
+        b.unk2 = stream.readUInt32();
+
         b.mPickID = mModelId++;
-        stream.skip(0x30 - 28);
-        mBuildings.push_back(b);        
+        mBuildings.push_back(b);
     }
 
     std::cout << "Read " << mBuildings.size() << " buildings" << std::endl; 
@@ -137,7 +143,51 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
     stream.readBytesTo(mModelData.data(), modelSize);
 
     // TODO: figure out bdhc stuff! 
-    // stream.seek(permissionsSize + buildingsSize + 0x10);
+    mBDHCData = {};
+    mBDHCData.resize(bdhcSize);
+    stream.seek(modelSize + permissionsSize + buildingsSize + 0x10);
+    stream.readBytesTo(mBDHCData.data(), bdhcSize);
+}
+
+void MapChunk::Save(std::shared_ptr<Palkia::Nitro::Archive> archive){
+    uint32_t dataSize = (mMovementPermissions.size() * 2) + (0x30 * mBuildings.size()) + mModelData.size() + mBDHCData.size();
+    bStream::CMemoryStream stream(dataSize, bStream::Endianess::Little, bStream::OpenMode::Out);
+
+    std::cout << "Saving Chunk ID " << mID << std::endl;
+
+    stream.writeUInt32(mMovementPermissions.size() * 2);
+    stream.writeUInt32(0x30 * mBuildings.size());
+    stream.writeUInt32(mModelData.size());
+    stream.writeUInt32(mBDHCData.size());
+
+    for(int i = 0; i < 1024; i++){
+        stream.writeUInt8(mMovementPermissions[i].first);
+        stream.writeUInt8(mMovementPermissions[i].second);
+    }
+    
+    for(auto building : mBuildings){
+        stream.writeUInt32(building.mModelID);
+        
+        stream.writeUInt32((uint32_t)(building.x * (1 << 12)));
+        stream.writeUInt32((uint32_t)(building.y * (1 << 12)));
+        stream.writeUInt32((uint32_t)(building.z * (1 << 12)));
+
+        stream.writeUInt32((uint32_t)(building.rx * (1 << 12)));
+        stream.writeUInt32((uint32_t)(building.ry * (1 << 12)));
+        stream.writeUInt32((uint32_t)(building.rz * (1 << 12)));
+
+        stream.writeUInt32((uint32_t)(building.l * (1 << 12)));
+        stream.writeUInt32((uint32_t)(building.w * (1 << 12)));
+        stream.writeUInt32((uint32_t)(building.h * (1 << 12)));
+
+        stream.writeUInt32(building.unk1);
+        stream.writeUInt32(building.unk2);
+    }
+
+    stream.writeBytes(mModelData.data(), mModelData.size());
+    stream.writeBytes(mBDHCData.data(), mBDHCData.size());
+
+    archive->GetFileByIndex(mID)->SetData(stream.getBuffer(), stream.getSize());
 }
 
 MapChunk::~MapChunk(){

@@ -58,6 +58,36 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
 
 }
 
+void MapManager::Save(Palkia::Nitro::Rom* rom){
+    bStream::CMemoryStream mapChunkStream(1, bStream::Endianess::Little, bStream::OpenMode::Out);
+    mMapChunkArchive->SaveArchive(mapChunkStream);
+
+    rom->GetFile("fielddata/land_data/land_data.narc")->SetData(mapChunkStream.getBuffer(), mapChunkStream.getSize());
+}
+
+void MapManager::SaveMatrix(){
+    uint16_t encounterID = 0xFFFF;
+    
+    if(mMatrices.size() == 0) return;
+    for(auto chunk : mMatrices[mActiveMatrix]->GetEntries()){
+        auto chunkLocked = chunk.mChunk.lock();
+        auto chunkHeaderLocked = chunk.mChunkHeader.lock();
+        if(chunk.mChunk.lock() && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
+
+            // save chunk
+            chunk.mChunk.lock()->Save(mMapChunkArchive);
+            
+            if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
+        }
+    }
+
+    // Save encounter data
+    if(encounterID != 0xFFFF){
+        //auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
+        //mEncounters = LoadEncounterFile(encounterFile);
+    }
+}
+
 void MapManager::SetActiveMatrix(uint32_t index){
     uint16_t encounterID = 0xFFFF;
     
