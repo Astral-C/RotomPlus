@@ -44,5 +44,6 @@ struct Encounter {
 };
 
 Encounter LoadEncounterFile(std::shared_ptr<Palkia::Nitro::File>);
+void SaveEncounterFile(std::shared_ptr<Palkia::Nitro::File>, Encounter);
 
 #endif

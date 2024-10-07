@@ -85,6 +85,7 @@ void MapManager::SaveMatrix(){
     if(encounterID != 0xFFFF){
         //auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
         //mEncounters = LoadEncounterFile(encounterFile);
+        SaveEncounterFile(mEncounterDataArchive->GetFileByIndex(encounterID), mEncounters);
     }
 }
 
