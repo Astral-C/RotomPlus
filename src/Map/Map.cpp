@@ -98,6 +98,7 @@ void MapManager::SetActiveMatrix(uint32_t index){
     
     mActiveMatrix = index;
     MapGraphicsHandler::ClearModelCache();
+
     if(mMatrices.size() == 0) return;
     for(auto chunk : mMatrices[index]->GetEntries()){
         auto chunkLocked = chunk.mChunk.lock();

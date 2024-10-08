@@ -60,7 +60,11 @@ void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr
         for (uint8_t y = 0; y < mHeight; y++){
             for (uint8_t x = 0; x < mWidth; x++){
                 uint16_t header = stream.readUInt16();
-                if(header != 0xFFFF) mEntries[(y * mWidth) + x].mChunkHeader = mHeaders[header];
+                if(header != 0xFFFF){
+                    mEntries[(y * mWidth) + x].mChunkHeader = mHeaders[header];
+                } else {
+                    mEntries[(y * mWidth) + x].mChunk = {};
+                }
             }
         }
     } else {
@@ -91,6 +95,8 @@ void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr
                 }
 
                 mEntries[(y * mWidth) + x].mChunk = mChunks[mapChunkID];
+            } else {
+                mEntries[(y * mWidth) + x].mChunk = {};
             }
         }
     }

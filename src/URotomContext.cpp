@@ -320,9 +320,59 @@ void URotomContext::Render(float deltaTime) {
 			//		object->mTransform = glm::inverse(zoneTransform) * transform;
 			//}
 
-			// [veebs]: Fix this, imguizmo update broke it
-
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
+		if(mCurrentTool == "Movement Permissions" && mRom != nullptr){
+			ImVec2 padding = ImGui::GetStyle().CellPadding;
+			ImGui::GetStyle().CellPadding = ImVec2(0.0f, 0.0f);
+			ImGui::BeginChild("##movementPositions");
+			if(mSelectedChunkPtr == nullptr && mMapManager.GetActiveMatrix() != nullptr){
+				auto entries = mMapManager.GetActiveMatrix()->GetEntries();
+				
+				ImGui::BeginTable("##mapMatrixView", mMapManager.GetActiveMatrix()->GetWidth(), ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
+
+				for(std::size_t y = 0; y < mMapManager.GetActiveMatrix()->GetHeight(); y++){
+					for(std::size_t x = 0; x < mMapManager.GetActiveMatrix()->GetWidth(); x++){
+						if(!entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk.expired()){
+							bool isInLocation = mLocationNames[entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunkHeader.lock()->mPlaceNameID] == mCurrentLocation;
+							
+							if(isInLocation) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4, 0.8, 0.5, 1.0));
+							if(ImGui::Button(std::format("{}, {}", x, y).c_str(), ImVec2(-1.0,0))){
+								mSelectedChunkPtr = entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk.lock();
+							}
+							if(isInLocation) ImGui::PopStyleColor();
+							
+						}
+						ImGui::TableNextColumn();
+					}
+					ImGui::TableNextRow();
+				}
+
+				ImGui::EndTable();
+
+			} else if(mMapManager.GetActiveMatrix() != nullptr) {
+				ImGui::BeginTable("##mapMatrixView", 32, ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
+				for(std::size_t y = 0; y < 32; y++){
+					ImGui::TableNextRow();
+					for(std::size_t x = 0; x < 32; x++){
+						ImGui::TableNextColumn();
+						auto perms = mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x];
+						bool walkable = perms.second == 0x80; 
+						if(walkable) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.3, 0.3, 1.0));
+						if(ImGui::Button(std::format("{:x}##{},{},{},{}", perms.first, x, y, y, x).c_str(), ImVec2(-1.0, 0.0))){
+							mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x].second = perms.second == 0x80 ? 0x00 : 0x80;
+						}
+						if(walkable) ImGui::PopStyleColor();
+					}
+				}
+				ImGui::EndTable();
+				if(ImGui::Button(ICON_FK_BACKWARD " Back")){
+					mSelectedChunkPtr = nullptr;
+				}
+			}
+			ImGui::EndChild();
+			ImGui::GetStyle().CellPadding = padding;
 		}
 
 		if(mCurrentTool == "Encounter Editor" && mRom != nullptr){
@@ -533,11 +583,11 @@ void URotomContext::Render(float deltaTime) {
 			for(int x = 0; x < 2; x++){
 				ImGui::Text("20%%");
 				ImGui::SameLine();
-				if(ImGui::BeginCombo(std::format("##pokeSlot{}Swarm", x).data(), PokemonNames[mMapManager.mEncounters.mNightPokemon[x]].data())){
+				if(ImGui::BeginCombo(std::format("##pokeSlot{}Swarm", x).data(), PokemonNames[mMapManager.mEncounters.mSwarmPokemon[x]].data())){
 					for(uint32_t i = 0; i < PokemonNames.size(); i++){
-							bool is_selected = (mMapManager.mEncounters.mNightPokemon[x] == i);
+							bool is_selected = (mMapManager.mEncounters.mSwarmPokemon[x] == i);
 							if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
-								mMapManager.mEncounters.mNightPokemon[x] = i;
+								mMapManager.mEncounters.mSwarmPokemon[x] = i;
 							}
 							if (is_selected) ImGui::SetItemDefaultFocus();
 					}

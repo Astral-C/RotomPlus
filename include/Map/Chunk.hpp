@@ -49,7 +49,7 @@ class MapChunk {
     std::vector<uint8_t> mBDHCData {};
 public:
 
-    void Save(std::shared_ptr<Palkia::Nitro::Archive> archive);
+    std::array<std::pair<uint8_t, uint8_t>, 1024>& GetMovementPermissions() { return mMovementPermissions; }
 
     Building* Select(uint32_t id);
 
@@ -68,6 +68,7 @@ public:
     Building* AddBuilding(Building b) { mBuildings.push_back(b); return &mBuildings.back(); }
 
     void Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v);
+    void Save(std::shared_ptr<Palkia::Nitro::Archive> archive);
 
     MapChunk(uint16_t, bStream::CStream&);
     ~MapChunk();
