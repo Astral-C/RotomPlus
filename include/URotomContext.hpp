@@ -39,6 +39,11 @@ class URotomContext {
 	bool mOptionsOpen { false };
 	bool mAboutOpen { false };
 	bool mViewportIsFocused { false };
+	bool mPermsTooltip { false };
+	uint32_t mPermsTooltipX = 0xFFFFFFFF;
+	uint32_t mPermsTooltipY = 0xFFFFFFFF;
+	uint32_t mSelectedX = 0;
+	uint32_t mSelectedY = 0;
 
 	bool bIsDockingSetUp { false };
 	bool bIsFileDialogOpen { false };

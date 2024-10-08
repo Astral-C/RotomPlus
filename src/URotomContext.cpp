@@ -323,10 +323,12 @@ void URotomContext::Render(float deltaTime) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
+		float scroll = 0.0f;
 		if(mCurrentTool == "Movement Permissions" && mRom != nullptr){
 			ImVec2 padding = ImGui::GetStyle().CellPadding;
 			ImGui::GetStyle().CellPadding = ImVec2(0.0f, 0.0f);
 			ImGui::BeginChild("##movementPositions");
+			scroll = ImGui::GetScrollMaxY() - ImGui::GetScrollY();
 			if(mSelectedChunkPtr == nullptr && mMapManager.GetActiveMatrix() != nullptr){
 				auto entries = mMapManager.GetActiveMatrix()->GetEntries();
 				
@@ -352,23 +354,35 @@ void URotomContext::Render(float deltaTime) {
 				ImGui::EndTable();
 
 			} else if(mMapManager.GetActiveMatrix() != nullptr) {
-				ImGui::BeginTable("##mapMatrixView", 32, ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
-				for(std::size_t y = 0; y < 32; y++){
-					ImGui::TableNextRow();
-					for(std::size_t x = 0; x < 32; x++){
-						ImGui::TableNextColumn();
-						auto perms = mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x];
-						bool walkable = perms.second == 0x80; 
-						if(walkable) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.3, 0.3, 1.0));
-						if(ImGui::Button(std::format("{:x}##{},{},{},{}", perms.first, x, y, y, x).c_str(), ImVec2(-1.0, 0.0))){
-							mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x].second = perms.second == 0x80 ? 0x00 : 0x80;
-						}
-						if(walkable) ImGui::PopStyleColor();
-					}
-				}
-				ImGui::EndTable();
-				if(ImGui::Button(ICON_FK_BACKWARD " Back")){
+				if(ImGui::Button(ICON_FK_BACKWARD " Back", ImVec2(-1, 0))){
 					mSelectedChunkPtr = nullptr;
+				} else {
+					ImGui::BeginTable("##mapMatrixView", 32, ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
+					for(std::size_t y = 0; y < 32; y++){
+						ImGui::TableNextRow();
+						for(std::size_t x = 0; x < 32; x++){
+							ImGui::TableNextColumn();
+							auto perms = mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x];
+							bool walkable = perms.second == 0x80; 
+							if(walkable) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.3, 0.3, 1.0));
+							
+
+							if(ImGui::Button(std::format("{:x}##{},{},{},{}", perms.first, x, y, y, x).c_str(), ImVec2(-1.0, 0.0))){
+								//Show a tooltip with a combobox
+								mPermsTooltip = true;
+								mPermsTooltipX = ImGui::GetCursorScreenPos().x - (ImGui::GetItemRectSize().x / 2);
+								mPermsTooltipY = ImGui::GetCursorScreenPos().y - (ImGui::GetItemRectSize().y * 2);
+								mSelectedX = x;
+								mSelectedY = y;
+							}
+
+							if(ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)){
+								mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x].second = mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x].second == 0x80 ? 0x00 : 0x80;
+							}
+							if(walkable) ImGui::PopStyleColor();
+						}
+					}
+					ImGui::EndTable();
 				}
 			}
 			ImGui::EndChild();
@@ -725,8 +739,25 @@ void URotomContext::Render(float deltaTime) {
 			ImGui::PopStyleVar();
 		}
 
+
 	ImGui::End();
 	ImGui::PopStyleVar();
+
+	if(mPermsTooltip){
+		ImGui::SetNextWindowPos(ImVec2(mPermsTooltipX - 25, mPermsTooltipY - 22.5 + scroll));
+		ImGui::SetNextWindowSize(ImVec2(100, 65));
+		ImGui::Begin("##mPermsTooltip", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+		
+		char buf[3] = {};
+		sprintf(buf, "%x", mSelectedChunkPtr->GetMovementPermissions()[(mSelectedY * 32) + mSelectedX].first);
+		ImGui::PushItemWidth(-1.0f);
+		if(ImGui::InputText("##hex_input", buf, sizeof(buf), ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_CharsHexadecimal)){
+			mSelectedChunkPtr->GetMovementPermissions()[(mSelectedY * 32) + mSelectedX].first = strtol(buf, NULL, 16);
+		}
+		ImGui::PopItemWidth();
+		if(ImGui::Button("Close", ImVec2(-1, 0))) mPermsTooltip = false;
+		ImGui::End();
+	}
 
 	//mGrid.Render(mCamera.GetPosition(), mCamera.GetProjectionMatrix(), mCamera.GetViewMatrix());
 }
