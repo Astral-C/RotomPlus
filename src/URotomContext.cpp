@@ -165,6 +165,7 @@ void URotomContext::Render(float deltaTime) {
 					if (ImGui::Selectable(std::format("{} : {}", i, matrices[i]->GetName()).data(), is_selected)){
 						mMapManager.SetActiveMatrix(i);
 						mCurrentMatrixIdx = i;
+						mSelectedChunkPtr = nullptr;
 					}
 					if (is_selected) ImGui::SetItemDefaultFocus();
 				}
@@ -331,6 +332,10 @@ void URotomContext::Render(float deltaTime) {
 			scroll = ImGui::GetScrollMaxY() - ImGui::GetScrollY();
 			if(mSelectedChunkPtr == nullptr && mMapManager.GetActiveMatrix() != nullptr){
 				auto entries = mMapManager.GetActiveMatrix()->GetEntries();
+
+				if(mMapManager.GetActiveMatrix()->GetHeight() == 1 && mMapManager.GetActiveMatrix()->GetWidth() == 1){
+					mSelectedChunkPtr = entries[0].mChunk.lock();
+				}
 				
 				ImGui::BeginTable("##mapMatrixView", mMapManager.GetActiveMatrix()->GetWidth(), ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
 
@@ -354,9 +359,12 @@ void URotomContext::Render(float deltaTime) {
 				ImGui::EndTable();
 
 			} else if(mMapManager.GetActiveMatrix() != nullptr) {
-				if(ImGui::Button(ICON_FK_BACKWARD " Back", ImVec2(-1, 0))){
-					mSelectedChunkPtr = nullptr;
-				} else {
+				if(mMapManager.GetActiveMatrix()->GetHeight() > 1 && mMapManager.GetActiveMatrix()->GetHeight() > 1){
+					if(ImGui::Button(ICON_FK_BACKWARD " Back", ImVec2(-1, 0))){
+						mSelectedChunkPtr = nullptr;
+					}
+				}
+				if(mSelectedChunkPtr != nullptr){
 					ImGui::BeginTable("##mapMatrixView", 32, ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
 					for(std::size_t y = 0; y < 32; y++){
 						ImGui::TableNextRow();
