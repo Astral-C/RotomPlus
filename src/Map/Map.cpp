@@ -71,7 +71,8 @@ void MapManager::Save(Palkia::Nitro::Rom* rom){
 
 void MapManager::SaveMatrix(){
     uint16_t encounterID = 0xFFFF;
-    
+    uint16_t eventDataID = 0xFFFF;
+
     if(mMatrices.size() == 0) return;
     for(auto chunk : mMatrices[mActiveMatrix]->GetEntries()){
         auto chunkLocked = chunk.mChunk.lock();
@@ -82,19 +83,25 @@ void MapManager::SaveMatrix(){
             chunk.mChunk.lock()->Save(mMapChunkArchive);
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
+            if(eventDataID == 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
         }
     }
 
     // Save encounter data
     if(encounterID != 0xFFFF){
-        //auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
-        //mEncounters = LoadEncounterFile(encounterFile);
         SaveEncounterFile(mEncounterDataArchive->GetFileByIndex(encounterID), mEncounters);
     }
+
+    // Save event data
+    if(eventDataID != 0xFFFF){
+        SaveEvents(mEventDataArchive->GetFileByIndex(eventDataID), mEvents);
+    }
+
 }
 
 void MapManager::SetActiveMatrix(uint32_t index){
     uint16_t encounterID = 0xFFFF;
+    uint16_t eventDataID = 0xFFFF;
     
     mActiveMatrix = index;
     MapGraphicsHandler::ClearModelCache();
@@ -107,9 +114,16 @@ void MapManager::SetActiveMatrix(uint32_t index){
             //mAreas[chunkHeaderLocked->mAreaID] .mMapTileset)
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
+            if(eventDataID == 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
             int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
             chunkLocked->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
+    }
+
+    if(eventDataID != 0xFFFF){
+        // load events
+        auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
+        mEvents = LoadEvents(eventsFile);
     }
 
     // load encounter data

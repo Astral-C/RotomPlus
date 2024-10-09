@@ -2,7 +2,6 @@
 
 Encounter LoadEncounterFile(std::shared_ptr<Palkia::Nitro::File> encounterFile){
     bStream::CMemoryStream encounterStream(encounterFile->GetData(), encounterFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-    // Reall shut put this all into a read encounters func...
     
     Encounter mEncounters;
     

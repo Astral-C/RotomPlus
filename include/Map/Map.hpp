@@ -6,6 +6,7 @@
 #include "Area.hpp"
 #include "Chunk.hpp"
 #include "Matrix.hpp"
+#include "Event.hpp"
 #include "Encounters.hpp"
 #include "NDS/System/Archive.hpp"
 #include "NDS/System/Rom.hpp"
@@ -26,6 +27,7 @@ class MapManager {
     std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive     = nullptr;
     std::shared_ptr<Palkia::Nitro::Archive> mEncounterDataArchive = nullptr;
 
+    std::vector<std::shared_ptr<Event>> mEvents;
 public:
     Encounter mEncounters;
     std::vector<std::shared_ptr<Matrix>>& GetMatrices() { return mMatrices; }
