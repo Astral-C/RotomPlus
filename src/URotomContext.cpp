@@ -10,8 +10,10 @@
 #include "IconsForkAwesome.h"
 #include "Text.hpp"
 #include "PokemonData.hpp"
+#include <glm/glm/ext/matrix_transform.hpp>
 #include <algorithm>
 #include <format>
+#include "Util.hpp"
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -43,6 +45,8 @@ URotomContext::URotomContext(){
 	
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	mGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+
+	mAreaRenderer.Init();
 }
 
 bool URotomContext::Update(float deltaTime) {
@@ -372,7 +376,7 @@ void URotomContext::Render(float deltaTime) {
 							ImGui::TableNextColumn();
 							auto perms = mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x];
 							bool walkable = perms.second == 0x80; 
-							if(walkable) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.3, 0.3, 1.0));
+							if(walkable) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.05, 0.05, 1.0));
 							
 
 							if(ImGui::Button(std::format("{:x}##{},{},{},{}", perms.first, x, y, y, x).c_str(), ImVec2(-1.0, 0.0))){
@@ -837,7 +841,8 @@ void URotomContext::RenderMenuBar() {
 
 				auto pokemonNamesFile = msgs.GetFileByIndex(412);
 				LoadPokemonNames(pokemonNamesFile);
-
+				mLocationNames.shrink_to_fit();
+				
 				mMapManager.Init(mRom.get(), mLocationNames);
 
 			}

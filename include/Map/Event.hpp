@@ -12,24 +12,20 @@ enum class EventType {
     Trigger
 };
 
-class Event {
-public:
-    EventType eventType;
-};
-
 // this one seemed off in the docs... weird!
-class Spawnable : public Event {
-public:
+struct Spawnable {
     uint16_t scriptNum;
     uint16_t type; // enum?
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
-    uint32_t orientation;
+    int16_t x;
+    uint16_t unk1;
+    int16_t y;
+    int32_t z;
+    uint16_t unk2;
+    uint16_t orientation;
+    uint16_t unk3;
 };
 
-class Overworld : public Event {
-public:
+struct Overworld {
     uint16_t spriteID;
     uint16_t overlayID;
     uint16_t movementType;
@@ -44,34 +40,39 @@ public:
     uint16_t xrange;
     uint16_t yrange;
     
-    uint16_t x;
-    uint16_t y;
-    uint32_t z;
+    int16_t x;
+    int16_t y;
+    int32_t z;
 };
 
-class Warp : public Event {
-public:
-    uint16_t x;
-    uint16_t y;
+struct Warp {
+    int16_t x;
+    int16_t y;
     
     uint16_t targetHeader;
     uint16_t anchor;
     uint32_t height;
 };
 
-class Trigger : public Event {   
-public:
+struct Trigger {   
     uint16_t scriptNum;
-    uint16_t x;
-    uint16_t y;
+    int16_t x;
+    int16_t y;
     uint16_t w;
     uint16_t h;
-    uint16_t z;
+    int16_t z;
     uint16_t expect;
     uint16_t watch;
 };
 
-std::vector<std::shared_ptr<Event>> LoadEvents(std::shared_ptr<Palkia::Nitro::File>);
-void SaveEvents(std::shared_ptr<Palkia::Nitro::File>, std::vector<std::shared_ptr<Event>>);
+struct EventData {
+    std::vector<Spawnable> spawnEvents;
+    std::vector<Overworld> overworldEvents;
+    std::vector<Warp> warpEvents;
+    std::vector<Trigger> triggerEvents;
+};
+
+EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File>);
+void SaveEvents(std::shared_ptr<Palkia::Nitro::File>, EventData);
 
 #endif

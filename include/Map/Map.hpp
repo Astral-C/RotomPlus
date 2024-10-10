@@ -27,8 +27,8 @@ class MapManager {
     std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive     = nullptr;
     std::shared_ptr<Palkia::Nitro::Archive> mEncounterDataArchive = nullptr;
 
-    std::vector<std::shared_ptr<Event>> mEvents;
 public:
+    EventData mEvents;
     Encounter mEncounters;
     std::vector<std::shared_ptr<Matrix>>& GetMatrices() { return mMatrices; }
     std::vector<std::shared_ptr<MapChunkHeader>>& GetChunkHeaders() { return mChunkHeaders; }

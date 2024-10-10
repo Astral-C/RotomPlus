@@ -1,6 +1,7 @@
 #pragma once
 
 #include "UCamera.hpp"
+#include "UAreaRenderer.hpp"
 
 #include <vector>
 #include <filesystem>
@@ -30,6 +31,7 @@ class URotomContext {
 	uint32_t mGizmoOperation { 0 };
 
 	USceneCamera mCamera;
+	CAreaRenderer mAreaRenderer;
 	
 	uint32_t mMainDockSpaceID;
 	uint32_t mDockNodeLeftID;

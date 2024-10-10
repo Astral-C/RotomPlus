@@ -18,6 +18,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
         areaCount = std::max(header->mAreaID, areaCount);
         mChunkHeaders.push_back(header);
     }
+    mChunkHeaders.shrink_to_fit();
 
     // Load area data
     auto areaDataFile = rom->GetFile("fielddata/areadata/area_data.narc");
@@ -27,6 +28,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
         auto areaStream = bStream::CMemoryStream(mAreaDataArchive->GetFileByIndex(i)->GetData(), mAreaDataArchive->GetFileByIndex(i)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
         mAreas.push_back({.mBuildingSet = areaStream.readUInt16(), .mMapTileset = areaStream.readUInt16(), .mUnknown = areaStream.readUInt16(), .mLightType = areaStream.readUInt16()});
     }
+    mAreas.shrink_to_fit();
 
     auto mapChunkFile = rom->GetFile("fielddata/land_data/land_data.narc");
     auto mapTexFile = rom->GetFile("fielddata/areadata/area_map_tex/map_tex_set.narc");
@@ -83,7 +85,7 @@ void MapManager::SaveMatrix(){
             chunk.mChunk.lock()->Save(mMapChunkArchive);
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
-            if(eventDataID == 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
+            if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
         }
     }
 
@@ -114,12 +116,13 @@ void MapManager::SetActiveMatrix(uint32_t index){
             //mAreas[chunkHeaderLocked->mAreaID] .mMapTileset)
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
-            if(eventDataID == 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
+            if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
             int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
             chunkLocked->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
     }
 
+    std::cout << std::dec << "Event data being loaded is :" << eventDataID << std::endl;
     if(eventDataID != 0xFFFF){
         // load events
         auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
@@ -151,6 +154,7 @@ void MapManager::LoadZone(uint32_t nameID){
             matrixIndices.push_back({header->mMatrixID, header});
         }
     }
+    matrixIndices.shrink_to_fit();
 
     //if(matrixIndices.)
 
