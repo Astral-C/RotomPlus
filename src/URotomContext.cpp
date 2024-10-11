@@ -263,6 +263,10 @@ void URotomContext::Render(float deltaTime) {
 			glEnable(GL_DEPTH_TEST);
 			mMapManager.Draw(projection * view);
 
+			for(auto sprite : mMapManager.mEvents.overworldEvents){
+				RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256, Palkia::fixed(sprite.z), ((sprite.y+1)*16)-256)));
+			}
+
 			cursorPos = ImGui::GetCursorScreenPos();
 			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mViewTex)), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});
 
@@ -831,7 +835,6 @@ void URotomContext::RenderMenuBar() {
 				auto msgArchive = mRom->GetFile("msgdata/pl_msg.narc");
 				bStream::CMemoryStream msgArcStream(msgArchive->GetData(), msgArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
-				
 				auto msgs = Palkia::Nitro::Archive(msgArcStream);
 
 				auto locationNamesFile = msgs.GetFileByIndex(433);
@@ -845,6 +848,11 @@ void URotomContext::RenderMenuBar() {
 				
 				mMapManager.Init(mRom.get(), mLocationNames);
 
+				auto mmodelArchive = mRom->GetFile("data/mmodel/mmodel.narc");
+				bStream::CMemoryStream mmodelArchiveStream(mmodelArchive->GetData(), mmodelArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+
+				auto mmodels = Palkia::Nitro::Archive(mmodelArchiveStream);
+				LoadEventModel(mmodels.GetFileByIndex(421));
 			}
 			catch (std::runtime_error e) {
 				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";

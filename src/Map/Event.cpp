@@ -4,6 +4,18 @@
 
 std::unique_ptr<Palkia::Formats::NSBMD> mEventModel { nullptr };
 
+void LoadEventModel(std::shared_ptr<Palkia::Nitro::File> file){
+    if(mEventModel == nullptr){
+        mEventModel = std::make_unique<Palkia::Formats::NSBMD>();
+        bStream::CMemoryStream stream(file->GetData(), file->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+        mEventModel->Load(stream);
+    }
+}
+
+void RenderEvent(glm::mat4 m){
+    if(mEventModel != nullptr) mEventModel->Render(m, 0xFFFFFFFF);
+}
+
 EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
     bStream::CMemoryStream eventStream(file->GetData(), file->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 

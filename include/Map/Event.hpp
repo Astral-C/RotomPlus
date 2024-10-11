@@ -75,4 +75,7 @@ struct EventData {
 EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File>);
 void SaveEvents(std::shared_ptr<Palkia::Nitro::File>, EventData);
 
+void LoadEventModel(std::shared_ptr<Palkia::Nitro::File>);
+void RenderEvent(glm::mat4);
+
 #endif
