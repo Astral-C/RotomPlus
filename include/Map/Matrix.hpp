@@ -9,7 +9,7 @@
 
 struct MatrixEntry {
     uint8_t mHeight;
-    std::weak_ptr<MapChunk> mChunk;
+    std::shared_ptr<MapChunk> mChunk; // I wish this could be weak BUT there is a weird issue with duplicates chunk IDs
     std::weak_ptr<MapChunkHeader> mChunkHeader;
 };
 

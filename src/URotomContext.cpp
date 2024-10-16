@@ -213,16 +213,15 @@ void URotomContext::Render(float deltaTime) {
 			}
 
 			if(mSelectedEvent->eventType == EventType::Warp){
-				auto matrices = mMapManager.GetMatrices();
 				auto chunkHeaders = mMapManager.GetChunkHeaders();
-				uint32_t targetHeaderIdx = reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader;
+				uint16_t targetHeaderIdx = reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader; 
 				auto targetHeader = chunkHeaders[targetHeaderIdx];
 				
 				ImGui::Text("Target Map");
-				std::string curName = std::format("{} : {}", mLocationNames[targetHeader->mPlaceNameID], (targetHeader->mMatrixID == 0xFFFF || matrices[targetHeader->mMatrixID] == nullptr ? "[none]" : matrices[targetHeader->mMatrixID]->GetName()));
+				std::string curName = std::format("{} : {}", mLocationNames[targetHeader->mPlaceNameID], mMapManager.GetChunkName(targetHeaderIdx));
 				if(ImGui::BeginCombo("##warpTargetCombo", curName.data())){
 					for(uint16_t i = 0; i < (uint16_t)chunkHeaders.size(); i++){
-							std::string targetName = std::format("{} : {}", mLocationNames[chunkHeaders[i]->mPlaceNameID], (chunkHeaders[i]->mMatrixID == 0xFFFF || matrices[targetHeader->mMatrixID] == nullptr ? "[none]" : matrices[chunkHeaders[i]->mMatrixID]->GetName()));
+							std::string targetName = std::format("{} : {}", mLocationNames[chunkHeaders[i]->mPlaceNameID], mMapManager.GetChunkName(i));
 							bool is_selected = (curName == targetName);
 							if (ImGui::Selectable(targetName.data(), is_selected)){
 								reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader = i;
@@ -314,7 +313,7 @@ void URotomContext::Render(float deltaTime) {
 			mMapManager.Draw(projection * view);
 
 			for(auto sprite : mMapManager.mEvents.overworldEvents){
-				RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id);
+				RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id, sprite.overlayID);
 			}
 
 			for(auto warp : mMapManager.mEvents.warpEvents){
@@ -440,19 +439,19 @@ void URotomContext::Render(float deltaTime) {
 				auto entries = mMapManager.GetActiveMatrix()->GetEntries();
 
 				if(mMapManager.GetActiveMatrix()->GetHeight() == 1 && mMapManager.GetActiveMatrix()->GetWidth() == 1){
-					mSelectedChunkPtr = entries[0].mChunk.lock();
+					mSelectedChunkPtr = entries[0].mChunk;
 				}
 				
 				ImGui::BeginTable("##mapMatrixView", mMapManager.GetActiveMatrix()->GetWidth(), ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
 
 				for(std::size_t y = 0; y < mMapManager.GetActiveMatrix()->GetHeight(); y++){
 					for(std::size_t x = 0; x < mMapManager.GetActiveMatrix()->GetWidth(); x++){
-						if(!entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk.expired()){
+						if(entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk != nullptr){
 							bool isInLocation = mLocationNames[entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunkHeader.lock()->mPlaceNameID] == mCurrentLocation;
 							
 							if(isInLocation) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4, 0.8, 0.5, 1.0));
 							if(ImGui::Button(std::format("{}, {}", x, y).c_str(), ImVec2(-1.0,0))){
-								mSelectedChunkPtr = entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk.lock();
+								mSelectedChunkPtr = entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk;
 							}
 							if(isInLocation) ImGui::PopStyleColor();
 							
@@ -950,7 +949,7 @@ void URotomContext::RenderMenuBar() {
 				bStream::CMemoryStream mmodelArchiveStream(mmodelArchive->GetData(), mmodelArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				auto mmodels = Palkia::Nitro::Archive(mmodelArchiveStream);
-				LoadEventModel(mmodels.GetFileByIndex(421));
+				LoadEventModel(mmodels);
 			}
 			catch (std::runtime_error e) {
 				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";

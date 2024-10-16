@@ -2,6 +2,11 @@
 #include "Map/Map.hpp"
 
 std::vector<std::string> locationNames;
+std::vector<std::string> chunkHeaderNames;
+
+std::string MapManager::GetChunkName(uint32_t idx){
+    return chunkHeaderNames[idx];
+}
 
 void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> locations){
     locationNames = locations;
@@ -30,6 +35,12 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     }
     mAreas.shrink_to_fit();
 
+    auto mapTable = rom->GetFile("fielddata/maptable/mapname.bin");
+    auto stream = bStream::CMemoryStream(mapTable->GetData(), mapTable->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    for(int x = 0; x < mapTable->GetSize() / 16; x++){
+        chunkHeaderNames.push_back(stream.readString(16));
+    }
+
     auto mapChunkFile = rom->GetFile("fielddata/land_data/land_data.narc");
     auto mapTexFile = rom->GetFile("fielddata/areadata/area_map_tex/map_tex_set.narc");
     auto buildModelFile = rom->GetFile("fielddata/build_model/build_model.narc");
@@ -37,7 +48,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     auto eventDataFile = rom->GetFile("fielddata/eventdata/zone_event.narc");
     auto encounterDataFile = rom->GetFile("fielddata/encountdata/pl_enc_data.narc");
 
-    auto stream = bStream::CMemoryStream(mapChunkFile->GetData(), mapChunkFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    stream = bStream::CMemoryStream(mapChunkFile->GetData(), mapChunkFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mMapChunkArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
 
     stream = bStream::CMemoryStream(mapTexFile->GetData(), mapTexFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
@@ -81,12 +92,11 @@ void MapManager::SaveMatrix(){
 
     if(mMatrices.size() == 0) return;
     for(auto chunk : mMatrices[mActiveMatrix]->GetEntries()){
-        auto chunkLocked = chunk.mChunk.lock();
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
-        if(chunk.mChunk.lock() && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
+        if(chunk.mChunk != nullptr && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
 
             // save chunk
-            chunk.mChunk.lock()->Save(mMapChunkArchive);
+            chunk.mChunk->Save(mMapChunkArchive);
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
@@ -114,15 +124,14 @@ void MapManager::SetActiveMatrix(uint32_t index){
 
     if(mMatrices.size() == 0) return;
     for(auto chunk : mMatrices[index]->GetEntries()){
-        auto chunkLocked = chunk.mChunk.lock();
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
-        if(chunk.mChunk.lock() && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
-            //mAreas[chunkHeaderLocked->mAreaID] .mMapTileset)
+        if(chunk.mChunk != nullptr && chunkHeaderLocked != nullptr && locationNames[chunkHeaderLocked->mPlaceNameID] == locationNames[mNameID]){
+            std::cout << "Chunk Locked and Loading..." << std::endl;
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
             int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
-            chunkLocked->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
+            chunk.mChunk->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
     }
 

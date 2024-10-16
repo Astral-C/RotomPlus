@@ -1,19 +1,19 @@
 #include "NDS/Assets/NSBMD.hpp"
+#include "NDS/System/Archive.hpp"
 #include "Map/Event.hpp"
 #include <format>
 
 std::unique_ptr<Palkia::Formats::NSBMD> mEventModel { nullptr };
 
-void LoadEventModel(std::shared_ptr<Palkia::Nitro::File> file){
+void LoadEventModel(Palkia::Nitro::Archive& arc){
     if(mEventModel == nullptr){
         mEventModel = std::make_unique<Palkia::Formats::NSBMD>();
-        bStream::CMemoryStream stream(file->GetData(), file->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+        bStream::CMemoryStream stream(arc.GetFileByIndex(421)->GetData(), arc.GetFileByIndex(421)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
         mEventModel->Load(stream);
-        //mEventModel->AttachNSBTX()
     }
 }
 
-void RenderEvent(glm::mat4 m, uint32_t id){
+void RenderEvent(glm::mat4 m, uint32_t id, uint32_t sprite){
     if(mEventModel != nullptr) mEventModel->Render(m, id);
 }
 

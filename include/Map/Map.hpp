@@ -36,6 +36,8 @@ public:
     void Init(Palkia::Nitro::Rom*,std::vector<std::string>); // load archives needed for map loading
     void Save(Palkia::Nitro::Rom*);
     
+    std::string GetChunkName(uint32_t);
+    
     void SaveMatrix();
 
     std::shared_ptr<Matrix> GetActiveMatrix() { if(mMatrices.size() > 0) { return mMatrices[mActiveMatrix]; } else { return nullptr; } };
