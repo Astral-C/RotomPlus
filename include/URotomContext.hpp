@@ -11,6 +11,7 @@
 #include <NDS/System/Rom.hpp>
 #include <NDS/System/Archive.hpp>
 #include "Map/Map.hpp"
+#include "Map/Event.hpp"
 
 class URotomContext {
 	
@@ -24,6 +25,8 @@ class URotomContext {
 	glm::vec2 mSelectedChunk = {0,0};
 	std::shared_ptr<MapChunk> mSelectedChunkPtr { nullptr };
 	Building* mSelectedBuilding { nullptr };
+	int mSelectedEventIdx { 0 };
+	Event* mSelectedEvent { nullptr };
 	MapManager mMapManager;
 
 	std::unique_ptr<Palkia::Nitro::Rom> mRom = nullptr;

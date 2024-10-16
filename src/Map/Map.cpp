@@ -67,8 +67,12 @@ void MapManager::Save(Palkia::Nitro::Rom* rom){
     bStream::CMemoryStream encounterStream(1, bStream::Endianess::Little, bStream::OpenMode::Out);
     mEncounterDataArchive->SaveArchive(encounterStream);
 
+    bStream::CMemoryStream eventStream(1, bStream::Endianess::Little, bStream::OpenMode::Out);
+    mEventDataArchive->SaveArchive(eventStream);
+
     rom->GetFile("fielddata/land_data/land_data.narc")->SetData(mapChunkStream.getBuffer(), mapChunkStream.getSize());
     rom->GetFile("fielddata/encountdata/pl_enc_data.narc")->SetData(encounterStream.getBuffer(), encounterStream.getSize());
+    rom->GetFile("fielddata/eventdata/zone_event.narc")->SetData(eventStream.getBuffer(), eventStream.getSize());
 }
 
 void MapManager::SaveMatrix(){

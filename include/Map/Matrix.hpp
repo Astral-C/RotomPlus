@@ -14,7 +14,7 @@ struct MatrixEntry {
 };
 
 class Matrix {
-    std::string mName;
+    std::string mName { "[unset]" };
     int mWidth, mHeight;
     std::vector<MatrixEntry> mEntries;
     std::weak_ptr<MapChunkHeader> mMainChunkHeader; // this is horrible, used for maps with only one header!

@@ -9,11 +9,12 @@ void LoadEventModel(std::shared_ptr<Palkia::Nitro::File> file){
         mEventModel = std::make_unique<Palkia::Formats::NSBMD>();
         bStream::CMemoryStream stream(file->GetData(), file->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
         mEventModel->Load(stream);
+        //mEventModel->AttachNSBTX()
     }
 }
 
-void RenderEvent(glm::mat4 m){
-    if(mEventModel != nullptr) mEventModel->Render(m, 0xFFFFFFFF);
+void RenderEvent(glm::mat4 m, uint32_t id){
+    if(mEventModel != nullptr) mEventModel->Render(m, id);
 }
 
 EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
@@ -26,6 +27,8 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
     for(std::size_t i = 0; i < spawnables; i++){
         // 0x14
         Spawnable spawn;
+        spawn.eventType = EventType::Spawnable;
+        spawn.id = GetID();
         spawn.scriptNum = eventStream.readInt16();
         spawn.type = eventStream.readInt16();
         spawn.x = eventStream.readInt16();
@@ -44,6 +47,8 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
     for(std::size_t i = 0; i < overworlds; i++){
         // 0x20
         Overworld overworld;
+        overworld.eventType = EventType::Overworld;
+        overworld.id = GetID();
         overworld.spriteID = eventStream.readUInt16();
         overworld.overlayID = eventStream.readUInt16();
         overworld.movementType = eventStream.readUInt16();
@@ -72,6 +77,8 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
     for(std::size_t i = 0; i < warps; i++){
         // 0xC
         Warp warp;
+        warp.eventType = EventType::Warp;
+        warp.id = GetID();
         warp.x = eventStream.readUInt16();
         warp.y = eventStream.readUInt16();
         warp.targetHeader = eventStream.readUInt16();
@@ -86,6 +93,8 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
     for(std::size_t i = 0; i < triggers; i++){
         // 0x10
         Trigger trigger;
+        trigger.eventType = EventType::Trigger;
+        trigger.id = GetID();
         trigger.scriptNum = eventStream.readUInt16();
         trigger.x = eventStream.readInt16();
         trigger.y = eventStream.readInt16();

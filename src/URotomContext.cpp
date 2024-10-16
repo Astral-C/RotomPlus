@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <format>
 #include "Util.hpp"
+#include <format>
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -185,11 +186,60 @@ void URotomContext::Render(float deltaTime) {
 
 	ImGui::SetNextWindowClass(&mainWindowOverride);
 	ImGui::Begin("chunkWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-		ImGui::Text("Current Chunk");
+		ImGui::Text("Current Map");
 		ImGui::Separator();
 		
-		// Show Chunk Settings
-		// Buildings, npcs, etc
+		ImGui::Text("Overworld Events");
+		if(ImGui::BeginCombo("##mapEventsOverworld", std::format("Event {}", mSelectedEventIdx).data())){
+			for(uint32_t i = 0; i < mMapManager.mEvents.overworldEvents.size(); i++){
+					bool is_selected = (&mMapManager.mEvents.overworldEvents[i] == mSelectedEvent);
+					if (ImGui::Selectable(std::format("Event {}", i).data(), is_selected)){
+						mSelectedEvent = &mMapManager.mEvents.overworldEvents[i];
+						mSelectedEventIdx = i;
+					}
+					if (is_selected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		if(mSelectedEvent != nullptr){
+			if(mSelectedEvent->eventType == EventType::Overworld){
+				int32_t ovId = (int32_t)reinterpret_cast<Overworld*>(mSelectedEvent)->overlayID;
+				int32_t orientation = (int32_t)reinterpret_cast<Overworld*>(mSelectedEvent)->orientation;
+				ImGui::InputInt("Sprite ID", &ovId);
+				ImGui::InputInt("Orientation", &orientation);
+				reinterpret_cast<Overworld*>(mSelectedEvent)->orientation = (uint16_t)orientation;
+				reinterpret_cast<Overworld*>(mSelectedEvent)->overlayID = (uint16_t)ovId;
+			}
+
+			if(mSelectedEvent->eventType == EventType::Warp){
+				auto matrices = mMapManager.GetMatrices();
+				auto chunkHeaders = mMapManager.GetChunkHeaders();
+				uint32_t targetHeaderIdx = reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader;
+				auto targetHeader = chunkHeaders[targetHeaderIdx];
+				
+				ImGui::Text("Target Map");
+				std::string curName = std::format("{} : {}", mLocationNames[targetHeader->mPlaceNameID], (targetHeader->mMatrixID == 0xFFFF || matrices[targetHeader->mMatrixID] == nullptr ? "[none]" : matrices[targetHeader->mMatrixID]->GetName()));
+				if(ImGui::BeginCombo("##warpTargetCombo", curName.data())){
+					for(uint16_t i = 0; i < (uint16_t)chunkHeaders.size(); i++){
+							std::string targetName = std::format("{} : {}", mLocationNames[chunkHeaders[i]->mPlaceNameID], (chunkHeaders[i]->mMatrixID == 0xFFFF || matrices[targetHeader->mMatrixID] == nullptr ? "[none]" : matrices[chunkHeaders[i]->mMatrixID]->GetName()));
+							bool is_selected = (curName == targetName);
+							if (ImGui::Selectable(targetName.data(), is_selected)){
+								reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader = i;
+							}
+							if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+
+				ImGui::Text("Anchor");
+				ImGui::SameLine();
+				int32_t anchor = reinterpret_cast<Warp*>(mSelectedEvent)->anchor;
+				ImGui::InputInt("##warpAnchor", &anchor);
+				reinterpret_cast<Warp*>(mSelectedEvent)->anchor = (uint16_t)anchor;
+
+			}
+		}
 	ImGui::End();
 		
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
@@ -264,7 +314,14 @@ void URotomContext::Render(float deltaTime) {
 			mMapManager.Draw(projection * view);
 
 			for(auto sprite : mMapManager.mEvents.overworldEvents){
-				RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256, Palkia::fixed(sprite.z), ((sprite.y+1)*16)-256)));
+				RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id);
+			}
+
+			for(auto warp : mMapManager.mEvents.warpEvents){
+				glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(((warp.x)*16)-256+8, ((Palkia::fixed(warp.height)+1)*16), ((warp.y)*16)-256+8));
+				m = glm::scale(m, glm::vec3(0.025f, 0.025f, 0.025f));
+				mAreaRenderer.DrawShape(&mCamera, AreaRenderShape::BOX_CENTER, warp.id, m, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				//RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256, Palkia::fixed(sprite.z), ((sprite.y+1)*16)-256)));
 			}
 
 			cursorPos = ImGui::GetCursorScreenPos();
@@ -292,16 +349,34 @@ void URotomContext::Render(float deltaTime) {
 				std::cout << "ID Select was " << std::hex << id << std::dec << std::endl; 
 
 				if(id != 0){
-					if(mMapManager.GetActiveMatrix() != nullptr){
+					bool selected = false;
+					for (std::size_t i = 0; i < mMapManager.mEvents.overworldEvents.size(); i++){
+						if(id == mMapManager.mEvents.overworldEvents[i].id){
+							mSelectedEvent = &mMapManager.mEvents.overworldEvents[i];
+							mSelectedBuilding = nullptr;
+							selected = true;
+						}
+					}
+					for (std::size_t i = 0; i < mMapManager.mEvents.warpEvents.size(); i++){
+						if(id == mMapManager.mEvents.warpEvents[i].id){
+							mSelectedEvent = &mMapManager.mEvents.warpEvents[i];
+							mSelectedBuilding = nullptr;
+							selected = true;
+						}
+					}
+					if(!selected && mMapManager.GetActiveMatrix() != nullptr){
 						auto result = mMapManager.GetActiveMatrix()->Select(id);
 						if(result.first != nullptr){
 							mSelectedBuilding = result.first;
 							mSelectedChunk.x = result.second.first;
 							mSelectedChunk.y = result.second.second;
+							mSelectedEvent = nullptr;
+							selected = true;
 						}
 					}
 				} else {
 					mSelectedBuilding = nullptr;
+					mSelectedEvent = nullptr;
 				}
 
 
@@ -322,6 +397,29 @@ void URotomContext::Render(float deltaTime) {
 
 				}
 				
+			} else if(mSelectedEvent != nullptr){
+				if(mSelectedEvent->eventType == EventType::Overworld){
+					Overworld* event = reinterpret_cast<Overworld*>(mSelectedEvent);
+					glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(((event->x)*16)-256+8, Palkia::fixed(event->z)+8, ((event->y)*16)-256+8));
+					glm::mat4 delta(1.0f);
+					if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
+						glm::vec4 newPos = transform[3];
+						event->x = ((newPos.x - 8 + 256) / 16);
+						event->y = ((newPos.z - 8 + 256) / 16);
+						event->z = (uint32_t)((newPos.y-8) * (1 << 12));
+
+					}
+				} else if(mSelectedEvent->eventType == EventType::Warp){
+					Warp* event = reinterpret_cast<Warp*>(mSelectedEvent);
+					glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(((event->x)*16)-256+8, Palkia::fixed(event->height)+8, ((event->y)*16)-256+8));
+					glm::mat4 delta(1.0f);
+					if(ImGuizmo::Manipulate(&mCamera.GetViewMatrix()[0][0], &mCamera.GetProjectionMatrix()[0][0], (ImGuizmo::OPERATION)mGizmoOperation, ImGuizmo::WORLD, &transform[0][0], &delta[0][0])){
+						glm::vec4 newPos = transform[3];
+						event->x = ((newPos.x - 8 + 256) / 16);
+						event->y = ((newPos.z - 8 + 256) / 16);
+						event->height = (uint32_t)((newPos.y-8) * (1 << 12));
+					}
+				} 
 			}
 
 			// gizmo operation on selected

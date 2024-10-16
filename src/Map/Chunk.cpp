@@ -2,10 +2,9 @@
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <NDS/Assets/NSBMD.hpp>
 #include <NDS/Assets/NSBTX.hpp>
+#include "IDManager.hpp"
 #include "Map/Chunk.hpp"
 #include "Util.hpp"
-
-static uint32_t mModelId = 1;
 
 namespace MapGraphicsHandler {
     std::map<uint16_t, Palkia::Formats::NSBMD*> mLoadedChunkModels;
@@ -130,7 +129,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
         b.unk1 = stream.readUInt32();
         b.unk2 = stream.readUInt32();
 
-        b.mPickID = mModelId++;
+        b.mPickID = GetID();
         mBuildings.push_back(b);
     }
 

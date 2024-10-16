@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <NDS/System/FileSystem.hpp>
+#include "IDManager.hpp"
 
 enum class EventType {
     Spawnable,
@@ -12,8 +13,13 @@ enum class EventType {
     Trigger
 };
 
+struct Event {
+    EventType eventType;   
+};
+
 // this one seemed off in the docs... weird!
-struct Spawnable {
+struct Spawnable : Event {
+    uint32_t id;
     uint16_t scriptNum;
     uint16_t type; // enum?
     int16_t x;
@@ -25,7 +31,8 @@ struct Spawnable {
     uint16_t unk3;
 };
 
-struct Overworld {
+struct Overworld : Event {
+    uint32_t id;
     uint16_t spriteID;
     uint16_t overlayID;
     uint16_t movementType;
@@ -45,7 +52,8 @@ struct Overworld {
     int32_t z;
 };
 
-struct Warp {
+struct Warp : Event {
+    uint32_t id;
     int16_t x;
     int16_t y;
     
@@ -54,7 +62,8 @@ struct Warp {
     uint32_t height;
 };
 
-struct Trigger {   
+struct Trigger : Event {
+    uint32_t id;   
     uint16_t scriptNum;
     int16_t x;
     int16_t y;
@@ -76,6 +85,6 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File>);
 void SaveEvents(std::shared_ptr<Palkia::Nitro::File>, EventData);
 
 void LoadEventModel(std::shared_ptr<Palkia::Nitro::File>);
-void RenderEvent(glm::mat4);
+void RenderEvent(glm::mat4, uint32_t);
 
 #endif
