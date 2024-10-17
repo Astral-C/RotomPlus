@@ -130,10 +130,12 @@ void MapManager::SetActiveMatrix(uint32_t index){
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
-            int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
-            chunk.mChunk->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
+            //int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
+            //chunk.mChunk->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
     }
+
+    mMatrices[index]->LoadGraphics(mBuildingArchive, mMapTexArchive, mAreas, mNameID);
 
     std::cout << std::dec << "Event data being loaded is :" << eventDataID << std::endl;
     if(eventDataID != 0xFFFF){

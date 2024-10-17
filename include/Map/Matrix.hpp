@@ -25,9 +25,10 @@ public:
 
     int GetWidth() { return mWidth; }
     int GetHeight() { return mHeight; }
+    void LoadGraphics(std::shared_ptr<Palkia::Nitro::Archive>, std::shared_ptr<Palkia::Nitro::Archive>, std::vector<Area>&, uint32_t);
 
-    Building* MoveBuilding(Building* building, uint32_t cx, uint32_t cy, uint32_t ncx, uint32_t ncy);
-    std::pair<Building*, std::pair<uint8_t, uint8_t>> Select(uint32_t id);
+    Building* MoveBuilding(Building*, uint32_t, uint32_t, uint32_t, uint32_t);
+    std::pair<Building*, std::pair<uint8_t, uint8_t>> Select(uint32_t);
     void Draw(glm::mat4, uint32_t);
     void Load(std::shared_ptr<Palkia::Nitro::File>, std::weak_ptr<Palkia::Nitro::Archive>, std::vector<std::shared_ptr<MapChunkHeader>>&, std::shared_ptr<MapChunkHeader>);
 

@@ -1,14 +1,58 @@
+#include <Map/Map.hpp>
 #include <Map/Matrix.hpp>
+#include <map>
+#include <set>
 
 Matrix::Matrix(){}
 Matrix::~Matrix(){}
+
+void Matrix::LoadGraphics(std::shared_ptr<Palkia::Nitro::Archive> buildingArchive, std::shared_ptr<Palkia::Nitro::Archive> mapTex, std::vector<Area>& areas, uint32_t placeNameID){
+    std::set<std::pair<uint32_t, uint32_t>> loaded = {};
+    for (uint8_t y = 0; y < mHeight; y++){
+        for (uint8_t x = 0; x < mWidth; x++){
+            if(loaded.count({x, y}) != 0) continue; // loaded already, skip
+            bool neighborHasPlace = false;
+            uint8_t placeArea = 0xFF;
+            for(int ly = -1; ly <= 1; ly++){
+                for(int lx = -1; lx <= 1; lx++){
+                    if((lx == 0 && ly == 0) || x + lx >= mWidth || y + ly >= mHeight || y + ly < 0 || x + lx < 0) continue;
+                    if(mEntries[((ly + y) * mWidth) + (x + lx)].mChunkHeader.lock() && mEntries[((ly + y) * mWidth) + (x + lx)].mChunkHeader.lock()->mPlaceNameID == placeNameID){
+                        neighborHasPlace = true;
+                        placeArea = mEntries[((ly + y) * mWidth) + (x + lx)].mChunkHeader.lock()->mAreaID;
+                        break;
+                    }
+                }
+            }
+
+            if(mEntries[(y * mWidth) + x].mChunk != nullptr&& mEntries[(y * mWidth) + x].mChunkHeader.lock() && (mEntries[(y * mWidth) + x].mChunkHeader.lock()->mPlaceNameID == placeNameID || neighborHasPlace)){
+                loaded.insert({x, y});
+                int texSet = areas[mEntries[(y * mWidth) + x].mChunkHeader.lock()->mAreaID].mMapTileset;
+                if(mEntries[(y * mWidth) + x].mChunkHeader.lock()->mAreaID == 0){
+                    texSet = areas[placeArea].mMapTileset;
+                }
+                mEntries[(y * mWidth) + x].mChunk->LoadGraphics(mapTex->GetFileByIndex(texSet), buildingArchive);
+            }
+        }
+    }    
+}
 
 void Matrix::Draw(glm::mat4 v, uint32_t placeNameID){
     for (uint8_t y = 0; y < mHeight; y++){
         for (uint8_t x = 0; x < mWidth; x++){
             // do a check here to see if its directly next to the current chunk and if it is (and hasnt been drawn) - draw it so we can see the border of the current map
-            if(mEntries[(y * mWidth) + x].mChunk != nullptr && mEntries[(y * mWidth) + x].mChunkHeader.lock() && mEntries[(y * mWidth) + x].mChunkHeader.lock()->mPlaceNameID == placeNameID){
-                mEntries[(y * mWidth) + x].mChunk->Draw(x, y, mEntries[(y * mWidth) + x].mHeight, v);
+            bool neighborHasPlace = false;
+            for(int ly = -1; ly <= 1; ly++){
+                for(int lx = -1; lx <= 1; lx++){
+                    if((lx == ly && ly == 0) || x + lx >= mWidth || y + ly >= mHeight || y + ly < 0 || x + lx < 0) continue;
+                    if(mEntries[((ly + y) * mWidth) + (x + lx)].mChunkHeader.lock() && mEntries[((ly + y) * mWidth) + (x + lx)].mChunkHeader.lock()->mPlaceNameID == placeNameID){
+                        neighborHasPlace = true;
+                        break;
+                    }
+                }
+            }
+
+            if(mEntries[(y * mWidth) + x].mChunk != nullptr&& mEntries[(y * mWidth) + x].mChunkHeader.lock() && (mEntries[(y * mWidth) + x].mChunkHeader.lock()->mPlaceNameID == placeNameID || neighborHasPlace)){
+                mEntries[(y * mWidth) + x].mChunk->Draw(x, y, mEntries[(y * mWidth) + x].mHeight * 8, v);
             }
         }
     }
