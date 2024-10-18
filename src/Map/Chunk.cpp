@@ -191,6 +191,15 @@ void MapChunk::Save(std::shared_ptr<Palkia::Nitro::Archive> archive){
     archive->GetFileByIndex(mID)->SetData(stream.getBuffer(), stream.getSize());
 }
 
+void MapChunk::ImportChunkNSBMD(std::string path){
+    mModelData.clear();
+
+    bStream::CFileStream model(path, bStream::Endianess::Little, bStream::OpenMode::In);
+
+    mModelData.resize(model.getSize());
+    model.readBytesTo(mModelData.data(), mModelData.size());
+}
+
 MapChunk::~MapChunk(){
 
 }

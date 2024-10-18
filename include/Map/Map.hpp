@@ -44,6 +44,7 @@ public:
     void SetActiveMatrix(uint32_t);
     void LoadZone(uint32_t); // needs to pass some
     void Draw(glm::mat4);
+    void ReloadGraphics() { mMatrices[mActiveMatrix]->LoadGraphics(mBuildingArchive, mMapTexArchive, mAreas, mNameID); }
 
     MapManager(){}
     ~MapManager(){}

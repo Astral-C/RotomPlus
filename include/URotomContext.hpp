@@ -17,12 +17,13 @@ class URotomContext {
 	
 	uint32_t mCurrentMatrixIdx { 0 };
 	std::string mCurrentTool = "Map Editor";
-	std::array<std::string, 4> mEditorTools = {"Map Editor", "Movement Permissions", "Encounter Editor", "Trainer Editor"};
+	std::array<std::string, 4> mEditorTools = {"Map Editor", "Chunk Editor", "Encounter Editor", "Trainer Editor"};
 	std::vector<std::string> mLocationNames = {"(None)"};
 	int mCurrentLocationIdx { 0 };
 	std::string mCurrentLocation = "";
 	glm::vec2 mPrevChunk = {0,0};
 	glm::vec2 mSelectedChunk = {0,0};
+	bool mImportChunkModelDialog { false };
 	std::shared_ptr<MapChunk> mSelectedChunkPtr { nullptr };
 	Building* mSelectedBuilding { nullptr };
 	int mSelectedEventIdx { 0 };

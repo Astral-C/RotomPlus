@@ -13,8 +13,8 @@
 #include <glm/glm/ext/matrix_transform.hpp>
 #include <algorithm>
 #include <format>
+#include "NDS/Assets/NSBMD.hpp"
 #include "Util.hpp"
-#include <format>
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -46,6 +46,9 @@ URotomContext::URotomContext(){
 	
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	mGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+	
+	Palkia::Formats::NSBMD test;
+	test.LoadIMD("test.imd");
 
 	mAreaRenderer.Init();
 }
@@ -430,7 +433,39 @@ void URotomContext::Render(float deltaTime) {
 		}
 
 		float scroll = 0.0f;
-		if(mCurrentTool == "Movement Permissions" && mRom != nullptr){
+		if(mCurrentTool == "Chunk Editor" && mRom != nullptr){
+
+			if(mSelectedChunkPtr != nullptr){
+				ImGui::BeginGroup();
+				if(ImGui::Button("Import Chunk Mode; (*.nsbmd)")){
+					mImportChunkModelDialog = true;
+				}
+
+				if (mImportChunkModelDialog) {
+					IGFD::FileDialogConfig config;
+					ImGuiFileDialog::Instance()->OpenDialog("ImportMapNSBMDDialog", "Import Map Chunk Model", ".nsbmd", config);
+				}
+
+				if (ImGuiFileDialog::Instance()->Display("ImportMapNSBMDDialog")) {
+					if (ImGuiFileDialog::Instance()->IsOk()) {
+						std::string FilePath = ImGuiFileDialog::Instance()->GetFilePathName();
+						std::cout << FilePath << std::endl;
+
+						mSelectedChunkPtr->ImportChunkNSBMD(FilePath);
+						mMapManager.ReloadGraphics();
+						mMapManager.SaveMatrix();
+
+						mImportChunkModelDialog = false;
+					} else {
+						mImportChunkModelDialog = false;
+					}
+
+					ImGuiFileDialog::Instance()->Close();
+				}
+
+				ImGui::EndGroup();
+			}
+
 			ImVec2 padding = ImGui::GetStyle().CellPadding;
 			ImGui::GetStyle().CellPadding = ImVec2(0.0f, 0.0f);
 			ImGui::BeginChild("##movementPositions");
