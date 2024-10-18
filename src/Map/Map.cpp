@@ -91,9 +91,37 @@ void MapManager::SaveMatrix(){
     uint16_t eventDataID = 0xFFFF;
 
     if(mMatrices.size() == 0) return;
+    int x = 0, y = 0;
     for(auto chunk : mMatrices[mActiveMatrix]->GetEntries()){
+        if(x + 1 == mMatrices[mActiveMatrix]->GetWidth()) y++;
+        x = (x + 1) % mMatrices[mActiveMatrix]->GetWidth();
+
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
         if(chunk.mChunk != nullptr && chunk.mChunkHeader.lock() && chunkHeaderLocked->mPlaceNameID == mNameID){
+            for(int i = 0; i < chunk.mChunk->GetBuildings().size(); i++){
+                auto building = chunk.mChunk->GetBuildings()[i];
+                if(building.x > 256 || building.x < -256 || building.z > 256 || building.z < -256){
+                    int moveChunkX = floor(abs(building.x) / 256);
+                    int moveChunkY = floor(abs(building.z) / 256);
+                    std::cout << "Move Amount " << moveChunkX << " " << moveChunkY << std::endl;
+
+                    if(building.x < 0) moveChunkX = -moveChunkX;
+                    if(building.z < 0) moveChunkY = -moveChunkY;
+
+                    std::cout << "Old building pos is " << building.x << "  " << building.z << std::endl;
+
+                    building.x = fmod(building.x, 256) - building.x / 256;
+                    building.z = fmod(building.z, 256) - building.z / 256;                    
+
+                    std::cout << "New building pos is " << building.x << "  " << building.z << std::endl;
+
+                    std::cout << "Adding building to to Chunk " << (x + moveChunkX) << " " << (y + moveChunkY) << " from " << x << " " << y << std::endl;
+
+                    mMatrices[mActiveMatrix]->GetEntries()[(y + moveChunkY) * mMatrices[mActiveMatrix]->GetWidth() + (x + moveChunkX)].mChunk->AddBuilding(building);
+                    mMatrices[mActiveMatrix]->GetEntries()[(y + moveChunkY) * mMatrices[mActiveMatrix]->GetWidth() + (x + moveChunkX)].mChunk->Save(mMapChunkArchive);
+                    chunk.mChunk->RemoveBuilding(i);
+                }
+            }
 
             // save chunk
             chunk.mChunk->Save(mMapChunkArchive);
@@ -112,6 +140,8 @@ void MapManager::SaveMatrix(){
     if(eventDataID != 0xFFFF){
         SaveEvents(mEventDataArchive->GetFileByIndex(eventDataID), mEvents);
     }
+
+    //SetActiveMatrix(mActiveMatrix); // reload
 
 }
 

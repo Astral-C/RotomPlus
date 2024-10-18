@@ -58,19 +58,6 @@ void Matrix::Draw(glm::mat4 v, uint32_t placeNameID){
     }
 }
 
-Building* Matrix::MoveBuilding(Building* building, uint32_t cx, uint32_t cy, uint32_t ncx, uint32_t ncy){
-    auto oldChunk = mEntries[(cy * mWidth) + cx].mChunk;
-    auto newChunk = mEntries[(ncy * mWidth) + ncx].mChunk;
-
-    Building b = *building;
-
-    if(oldChunk) oldChunk->RemoveBuilding(building);
-    if(newChunk){
-        return newChunk->AddBuilding(b);
-    }
-    return nullptr; // this shouldnt happen
-}
-
 std::pair<Building*, std::pair<uint8_t, uint8_t>> Matrix::Select(uint32_t id){
     for (uint8_t y = 0; y < mHeight; y++){
         for (uint8_t x = 0; x < mWidth; x++){

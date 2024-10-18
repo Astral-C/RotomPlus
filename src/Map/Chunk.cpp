@@ -106,6 +106,8 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
     uint32_t modelSize = stream.readUInt32();
     uint32_t bdhcSize = stream.readUInt32();
 
+    mBuildings = std::vector<Building>();
+
     std::cout << "Reading chunk " << id << " with " << buildingsSize << " size building chunk" << std::endl;
 
     for(int i = 0; i < 1024; i++){

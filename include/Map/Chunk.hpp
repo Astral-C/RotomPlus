@@ -49,23 +49,22 @@ class MapChunk {
     std::vector<uint8_t> mBDHCData {};
 public:
 
+    std::vector<Building> GetBuildings() { return mBuildings; }
+
     std::array<std::pair<uint8_t, uint8_t>, 1024>& GetMovementPermissions() { return mMovementPermissions; }
 
     Building* Select(uint32_t id);
 
     void LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::shared_ptr<Palkia::Nitro::Archive> buildModels);
 
-    void RemoveBuilding(Building* b) {
-        for(int i = 0; i < mBuildings.size(); i++) {
-            if(&mBuildings[i] == b){
-                std::cout << "Found it! Removing..." << std::endl;
-                mBuildings.erase(mBuildings.begin() + i);
-                break;
-            }
-        }
+    void RemoveBuilding(uint32_t i) {
+        mBuildings.erase(mBuildings.begin() + (std::size_t)i);
     }
 
-    Building* AddBuilding(Building b) { mBuildings.push_back(b); return &mBuildings.back(); }
+    Building* AddBuilding(Building b) {
+        mBuildings.push_back(b);
+        return &mBuildings.back();
+    }
 
     void Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v);
     void Save(std::shared_ptr<Palkia::Nitro::Archive> archive);
