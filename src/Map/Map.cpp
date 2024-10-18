@@ -1,5 +1,6 @@
 #include <format>
 #include "Map/Map.hpp"
+#include "GameConfig.hpp"
 
 std::vector<std::string> locationNames;
 std::vector<std::string> chunkHeaderNames;
@@ -13,10 +14,16 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     auto arm9 = rom->GetFile("@arm9.bin");
     bStream::CMemoryStream armStream(arm9->GetData(), arm9->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     std::cout << "ARM9 Binary Size is 0x" << std::hex << arm9->GetSize() << std::dec << std::endl;
-    armStream.seek(0xE601C);
+    armStream.seek(Configs[std::string(rom->GetHeader().gameCode)].mChunkHeaderPtr);
+
+    auto mapTable = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mMapTablePath);
+    auto stream = bStream::CMemoryStream(mapTable->GetData(), mapTable->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    for(int x = 0; x < mapTable->GetSize() / 16; x++){
+        chunkHeaderNames.push_back(stream.readString(16));
+    }
 
     uint8_t areaCount = 0;
-    for(int i = 0; i < 570; i++){
+    for(int i = 0; i < chunkHeaderNames.size(); i++){
         std::shared_ptr<MapChunkHeader> header = std::make_shared<MapChunkHeader>();
         header->Read(armStream);
         //std::cout << "Loading header with map name " << locations[header->mPlaceNameID] << " " << (uint)header->mPlaceNameID << " Area " << std::dec << (uint)header->mAreaID << std::endl;
@@ -26,7 +33,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     mChunkHeaders.shrink_to_fit();
 
     // Load area data
-    auto areaDataFile = rom->GetFile("fielddata/areadata/area_data.narc");
+    auto areaDataFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mAreaDataPath);
     auto areaDataStream = bStream::CMemoryStream(areaDataFile->GetData(), areaDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mAreaDataArchive = std::make_shared<Palkia::Nitro::Archive>(areaDataStream);
     for(int i = 0; i  < areaCount; i++){
@@ -35,18 +42,12 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string> location
     }
     mAreas.shrink_to_fit();
 
-    auto mapTable = rom->GetFile("fielddata/maptable/mapname.bin");
-    auto stream = bStream::CMemoryStream(mapTable->GetData(), mapTable->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-    for(int x = 0; x < mapTable->GetSize() / 16; x++){
-        chunkHeaderNames.push_back(stream.readString(16));
-    }
-
-    auto mapChunkFile = rom->GetFile("fielddata/land_data/land_data.narc");
-    auto mapTexFile = rom->GetFile("fielddata/areadata/area_map_tex/map_tex_set.narc");
-    auto buildModelFile = rom->GetFile("fielddata/build_model/build_model.narc");
-    auto mapMatrixFile = rom->GetFile("fielddata/mapmatrix/map_matrix.narc");
-    auto eventDataFile = rom->GetFile("fielddata/eventdata/zone_event.narc");
-    auto encounterDataFile = rom->GetFile("fielddata/encountdata/pl_enc_data.narc");
+    auto mapChunkFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mLandDataPath);
+    auto mapTexFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mMapTexSetPath);
+    auto buildModelFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mBuildModelPath);
+    auto mapMatrixFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mMapMatrixPath);
+    auto eventDataFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mZoneEventPath);
+    auto encounterDataFile = rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mEncounterDataPath);
 
     stream = bStream::CMemoryStream(mapChunkFile->GetData(), mapChunkFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mMapChunkArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
@@ -81,9 +82,9 @@ void MapManager::Save(Palkia::Nitro::Rom* rom){
     bStream::CMemoryStream eventStream(1, bStream::Endianess::Little, bStream::OpenMode::Out);
     mEventDataArchive->SaveArchive(eventStream);
 
-    rom->GetFile("fielddata/land_data/land_data.narc")->SetData(mapChunkStream.getBuffer(), mapChunkStream.getSize());
-    rom->GetFile("fielddata/encountdata/pl_enc_data.narc")->SetData(encounterStream.getBuffer(), encounterStream.getSize());
-    rom->GetFile("fielddata/eventdata/zone_event.narc")->SetData(eventStream.getBuffer(), eventStream.getSize());
+    rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mLandDataPath)->SetData(mapChunkStream.getBuffer(), mapChunkStream.getSize());
+    rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mEncounterDataPath)->SetData(encounterStream.getBuffer(), encounterStream.getSize());
+    rom->GetFile(Configs[std::string(rom->GetHeader().gameCode)].mZoneEventPath)->SetData(eventStream.getBuffer(), eventStream.getSize());
 }
 
 void MapManager::SaveMatrix(){

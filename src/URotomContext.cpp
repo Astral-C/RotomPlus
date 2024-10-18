@@ -15,6 +15,7 @@
 #include <format>
 #include "NDS/Assets/NSBMD.hpp"
 #include "Util.hpp"
+#include "GameConfig.hpp"
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -309,7 +310,6 @@ void URotomContext::Render(float deltaTime) {
 			glm::mat4 projection, view;
 			projection = mCamera.GetProjectionMatrix();
 			view = mCamera.GetViewMatrix();
-
 
 			// Render Models
 			glEnable(GL_DEPTH_TEST);
@@ -958,40 +958,39 @@ void URotomContext::RenderMenuBar() {
 			std::string FilePath = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::cout << FilePath << std::endl;
 
-			try {
+			//try {
 				// load rom here
 				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
 
 				// Load Area Names
-
-				auto msgArchive = mRom->GetFile("msgdata/pl_msg.narc");
+				auto msgArchive = mRom->GetFile(Configs[std::string(mRom->GetHeader().gameCode)].mMsgPath);
 				bStream::CMemoryStream msgArcStream(msgArchive->GetData(), msgArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				auto msgs = Palkia::Nitro::Archive(msgArcStream);
 
-				auto locationNamesFile = msgs.GetFileByIndex(433);
+				auto locationNamesFile = msgs.GetFileByIndex(Configs[std::string(mRom->GetHeader().gameCode)].mLocationNamesFileID);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				mLocationNames = Text::DecodeStringList(locationNamesStream);
 
-				auto pokemonNamesFile = msgs.GetFileByIndex(412);
+				auto pokemonNamesFile = msgs.GetFileByIndex(Configs[std::string(mRom->GetHeader().gameCode)].mPokeNamesFileID);
 				LoadPokemonNames(pokemonNamesFile);
 				mLocationNames.shrink_to_fit();
 				
 				mMapManager.Init(mRom.get(), mLocationNames);
 
-				auto mmodelArchive = mRom->GetFile("data/mmodel/mmodel.narc");
+				auto mmodelArchive = mRom->GetFile(Configs[std::string(mRom->GetHeader().gameCode)].mMoveModel); 
 				bStream::CMemoryStream mmodelArchiveStream(mmodelArchive->GetData(), mmodelArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				auto mmodels = Palkia::Nitro::Archive(mmodelArchiveStream);
 				LoadEventModel(mmodels);
-			}
-			catch (std::runtime_error e) {
-				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
-			}
-			catch (std::exception e) {
-				std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
-			}
+			//}
+			//catch (std::runtime_error e) {
+			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
+			//}
+			//catch (std::exception e) {
+			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
+			//}
 
 			bIsFileDialogOpen = false;
 		} else {
