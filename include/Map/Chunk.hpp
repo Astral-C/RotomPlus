@@ -28,8 +28,8 @@ struct MapChunkHeader {
     uint8_t mDashFlag;
     uint8_t mEscapeFlag;
     uint8_t mFlyFlag;
-
-    void Read(bStream::CStream&);
+    uint8_t mKantoFlag;
+    void Read(bStream::CStream&, uint32_t);
 };
 
 struct Building {

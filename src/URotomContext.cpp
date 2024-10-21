@@ -327,7 +327,7 @@ void URotomContext::Render(float deltaTime) {
 			}
 
 			cursorPos = ImGui::GetCursorScreenPos();
-			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mViewTex)), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});
+			ImGui::Image(static_cast<uintptr_t>(mViewTex), { winSize.x, winSize.y }, {0.0f, 1.0f}, {1.0f, 0.0f});
 
 			if(ImGui::IsWindowFocused()){
 				mViewportIsFocused = true;
@@ -963,23 +963,25 @@ void URotomContext::RenderMenuBar() {
 				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
 
 				// Load Area Names
-				auto msgArchive = mRom->GetFile(Configs[std::string(mRom->GetHeader().gameCode)].mMsgPath);
+				std::cout << "0x" << std::hex << mRom->GetHeader().gameCode << std::dec << " : " << Configs[mRom->GetHeader().gameCode].mMsgPath << std::endl;
+				auto msgArchive = mRom->GetFile(Configs[mRom->GetHeader().gameCode].mMsgPath);
 				bStream::CMemoryStream msgArcStream(msgArchive->GetData(), msgArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				auto msgs = Palkia::Nitro::Archive(msgArcStream);
 
-				auto locationNamesFile = msgs.GetFileByIndex(Configs[std::string(mRom->GetHeader().gameCode)].mLocationNamesFileID);
+				auto locationNamesFile = msgs.GetFileByIndex(Configs[mRom->GetHeader().gameCode].mLocationNamesFileID);
 				bStream::CMemoryStream locationNamesStream(locationNamesFile->GetData(), locationNamesFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				mLocationNames = Text::DecodeStringList(locationNamesStream);
 
-				auto pokemonNamesFile = msgs.GetFileByIndex(Configs[std::string(mRom->GetHeader().gameCode)].mPokeNamesFileID);
+				auto pokemonNamesFile = msgs.GetFileByIndex(Configs[mRom->GetHeader().gameCode].mPokeNamesFileID);
 				LoadPokemonNames(pokemonNamesFile);
+
 				mLocationNames.shrink_to_fit();
-				
+
 				mMapManager.Init(mRom.get(), mLocationNames);
 
-				auto mmodelArchive = mRom->GetFile(Configs[std::string(mRom->GetHeader().gameCode)].mMoveModel); 
+				auto mmodelArchive = mRom->GetFile(Configs[mRom->GetHeader().gameCode].mMoveModel); 
 				bStream::CMemoryStream mmodelArchiveStream(mmodelArchive->GetData(), mmodelArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				auto mmodels = Palkia::Nitro::Archive(mmodelArchiveStream);

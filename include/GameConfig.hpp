@@ -18,12 +18,13 @@ struct GameConfig {
     std::string mMoveModel;
     uint32_t mLocationNamesFileID;
     uint32_t mPokeNamesFileID;
+    bool compressedArm9;
 };
 
 extern const GameConfig Platinum;
 extern const GameConfig SoulSilver;
 
-extern std::map<std::string, const GameConfig> Configs;
+extern std::map<uint32_t, const GameConfig> Configs;
 
 
 #endif

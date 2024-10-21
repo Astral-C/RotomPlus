@@ -33,7 +33,7 @@ public:
     std::vector<std::shared_ptr<Matrix>>& GetMatrices() { return mMatrices; }
     std::vector<std::shared_ptr<MapChunkHeader>>& GetChunkHeaders() { return mChunkHeaders; }
     
-    void Init(Palkia::Nitro::Rom*,std::vector<std::string>); // load archives needed for map loading
+    void Init(Palkia::Nitro::Rom*,std::vector<std::string>&); // load archives needed for map loading
     void Save(Palkia::Nitro::Rom*);
     
     std::string GetChunkName(uint32_t);

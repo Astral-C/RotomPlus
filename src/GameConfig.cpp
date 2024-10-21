@@ -13,26 +13,28 @@ const GameConfig Platinum {
     "msgdata/pl_msg.narc",
     "data/mmodel/mmodel.narc",
     433,
-    412
+    412,
+    false
 };
 
 const GameConfig SoulSilver {
     0xF6BE0,
-    "data/a/0/4/2", //area data
+    "a/0/4/2", //area data
     "fielddata/maptable/mapname.bin", //???
-    "data/a/0/6/5", //landdata
-    "data/a/0/4/4", // tex set
-    "data/a/0/4/0", // build models
-    "data/a/0/4/1", //matrix
-    "data/a/0/3/2", // zone event
-    "data/a/1/3/6", //encounters
-    "data/a/0/2/7", // message
-    "data/a/0/8/1", //move model
+    "a/0/6/5", //landdata
+    "a/0/4/4", // tex set
+    "a/0/4/0", // build models
+    "a/0/4/1", //matrix
+    "a/0/3/2", // zone event
+    "a/1/3/6", //encounters
+    "a/0/2/7", // message
+    "a/0/8/1", //move model
     279,
-    236
+    237,
+    true
 };
 
-std::map<std::string, const GameConfig> Configs {
-    { "CPUE", Platinum },
-    { "IPGE", SoulSilver } 
+std::map<uint32_t, const GameConfig> Configs {
+    { (uint32_t)'EUPC', Platinum },
+    { (uint32_t)'EGPI', SoulSilver } 
 };
