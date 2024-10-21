@@ -1,79 +1,148 @@
 #include "Map/Encounters.hpp"
 
-Encounter LoadEncounterFile(std::shared_ptr<Palkia::Nitro::File> encounterFile){
+Encounter LoadEncounterFile(std::shared_ptr<Palkia::Nitro::File> encounterFile, uint32_t gameCode){
     bStream::CMemoryStream encounterStream(encounterFile->GetData(), encounterFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     
     Encounter mEncounters;
-    
-    mEncounters.mWalkingEncounterRate = encounterStream.readInt32();
-    for(int i = 0; i < 12; i++){
-        mEncounters.mWalkingLevel[i] = encounterStream.readUInt32();
-        mEncounters.mWalking[i] = encounterStream.readUInt32();
-    }
+    if(gameCode == (uint32_t)'EGPI'){
+        mEncounters.mWalkingEncounterRate = encounterStream.readUInt8();
+        mEncounters.mSurfEncounterRate = encounterStream.readUInt8();
+        mEncounters.mRockSmashRate = encounterStream.readUInt8();
+        mEncounters.mOldRodRate = encounterStream.readUInt8();
+        mEncounters.mGoodRodRate = encounterStream.readUInt8();
+        mEncounters.mSuperRodRate = encounterStream.readUInt8();
 
-    mEncounters.mSwarmPokemon[0] = encounterStream.readUInt32();
-    mEncounters.mSwarmPokemon[1] = encounterStream.readUInt32();
+        encounterStream.readUInt16(); // skip 2
 
-    mEncounters.mMorningPokemon[0] = encounterStream.readUInt32();
-    mEncounters.mMorningPokemon[1] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 12; i++){
+            mEncounters.mWalkingLevel[i] = encounterStream.readUInt8();
+        }
 
-    mEncounters.mNightPokemon[0] = encounterStream.readUInt32();
-    mEncounters.mNightPokemon[1] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 12; i++){
+            mEncounters.mMorningPokemon[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mRadarPokemon[0] = encounterStream.readUInt32();
-    mEncounters.mRadarPokemon[1] = encounterStream.readUInt32();
-    mEncounters.mRadarPokemon[2] = encounterStream.readUInt32();
-    mEncounters.mRadarPokemon[3] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 12; i++){
+            mEncounters.mDayPokemon[i] = encounterStream.readUInt16();
+        }
 
-    encounterStream.seek(0xA4); // I don't like this... Figure out if there is a better way to handle this
+        for (std::size_t i = 0; i < 12; i++){
+            mEncounters.mNightPokemon[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mRuby[0] = encounterStream.readUInt32();
-    mEncounters.mRuby[1] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 2; i++){
+            mEncounters.mHoennGearMusic[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mSapphire[0] = encounterStream.readUInt32();
-    mEncounters.mSapphire[1] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 2; i++){
+            mEncounters.mSinnohGearMusic[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mEmerald[0] = encounterStream.readUInt32();
-    mEncounters.mEmerald[1] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 5; i++){
+            mEncounters.mSurfMinLevels[i] = encounterStream.readUInt8();
+            mEncounters.mSurfMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mSurf[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mFireRed[0] = encounterStream.readUInt32();
-    mEncounters.mFireRed[1] = encounterStream.readUInt32();
+        for (std::size_t i = 0; i < 2; i++){
+            mEncounters.mRockSmashMinLevels[i] = encounterStream.readUInt8();
+            mEncounters.mRockSmashMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mRockSmashPokemon[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mLeafGreen[0] = encounterStream.readUInt32();
-    mEncounters.mLeafGreen[1] = encounterStream.readUInt32();
+        for(int i = 0; i < 5; i++){
+            mEncounters.mOldMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mOldMinLevels[i] = encounterStream.readUInt8();
+            mEncounters.mOldRod[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mSurfEncounterRate = encounterStream.readInt32();
-    for(int i = 0; i < 5; i++){
-        mEncounters.mSurfMaxLevels[i] = encounterStream.readUInt8();
-        mEncounters.mSurfMinLevels[i] = encounterStream.readUInt8();
-        encounterStream.skip(2); // is this padding? or is something here???
-        mEncounters.mSurf[i] = encounterStream.readUInt32();
-    }
+        for(int i = 0; i < 5; i++){
+            mEncounters.mGoodRodMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mGoodRodMinLevels[i] = encounterStream.readUInt8();
+            mEncounters.mGoodRod[i] = encounterStream.readUInt16();
+        }
 
-    encounterStream.seek(0x214); //again, is there a better way to do this
+        for(int i = 0; i < 5; i++){
+            mEncounters.mSuperRodMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mSuperRodMinLevels[i] = encounterStream.readUInt8();
+            mEncounters.mSuperRod[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mOldRodRate = encounterStream.readInt32();
-    for(int i = 0; i < 5; i++){
-        mEncounters.mOldMaxLevels[i] = encounterStream.readUInt8();
-        mEncounters.mOldMinLevels[i] = encounterStream.readUInt8();
-        encounterStream.skip(2); // is this padding? or is something here???
-        mEncounters.mOldRod[i] = encounterStream.readUInt32();
-    }
+        for(int i = 0; i < 4; i++){
+            mEncounters.mSwarmPokemon[i] = encounterStream.readUInt16();
+        }
 
-    mEncounters.mGoodRodRate = encounterStream.readInt32();
-    for(int i = 0; i < 5; i++){
-        mEncounters.mGoodRodMaxLevels[i] = encounterStream.readUInt8();
-        mEncounters.mGoodRodMinLevels[i] = encounterStream.readUInt8();
-        encounterStream.skip(2); // is this padding? or is something here???
-        mEncounters.mGoodRod[i] = encounterStream.readUInt32();
-    }
+    } else {
+        mEncounters.mWalkingEncounterRate = encounterStream.readInt32();
+        for(int i = 0; i < 12; i++){
+            mEncounters.mWalkingLevel[i] = encounterStream.readUInt32();
+            mEncounters.mWalking[i] = encounterStream.readUInt32();
+        }
 
-    mEncounters.mSuperRodRate = encounterStream.readInt32();
-    for(int i = 0; i < 5; i++){
-        mEncounters.mSuperRodMaxLevels[i] = encounterStream.readUInt8();
-        mEncounters.mSuperRodMinLevels[i] = encounterStream.readUInt8();
-        encounterStream.skip(2); // is this padding? or is something here???
-        mEncounters.mSuperRod[i] = encounterStream.readUInt32();
+        mEncounters.mSwarmPokemon[0] = encounterStream.readUInt32();
+        mEncounters.mSwarmPokemon[1] = encounterStream.readUInt32();
+
+        mEncounters.mMorningPokemon[0] = encounterStream.readUInt32();
+        mEncounters.mMorningPokemon[1] = encounterStream.readUInt32();
+
+        mEncounters.mNightPokemon[0] = encounterStream.readUInt32();
+        mEncounters.mNightPokemon[1] = encounterStream.readUInt32();
+
+        mEncounters.mRadarPokemon[0] = encounterStream.readUInt32();
+        mEncounters.mRadarPokemon[1] = encounterStream.readUInt32();
+        mEncounters.mRadarPokemon[2] = encounterStream.readUInt32();
+        mEncounters.mRadarPokemon[3] = encounterStream.readUInt32();
+
+        encounterStream.seek(0xA4); // I don't like this... Figure out if there is a better way to handle this
+
+        mEncounters.mRuby[0] = encounterStream.readUInt32();
+        mEncounters.mRuby[1] = encounterStream.readUInt32();
+
+        mEncounters.mSapphire[0] = encounterStream.readUInt32();
+        mEncounters.mSapphire[1] = encounterStream.readUInt32();
+
+        mEncounters.mEmerald[0] = encounterStream.readUInt32();
+        mEncounters.mEmerald[1] = encounterStream.readUInt32();
+
+        mEncounters.mFireRed[0] = encounterStream.readUInt32();
+        mEncounters.mFireRed[1] = encounterStream.readUInt32();
+
+        mEncounters.mLeafGreen[0] = encounterStream.readUInt32();
+        mEncounters.mLeafGreen[1] = encounterStream.readUInt32();
+
+        mEncounters.mSurfEncounterRate = encounterStream.readInt32();
+        for(int i = 0; i < 5; i++){
+            mEncounters.mSurfMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mSurfMinLevels[i] = encounterStream.readUInt8();
+            encounterStream.skip(2); // is this padding? or is something here???
+            mEncounters.mSurf[i] = encounterStream.readUInt32();
+        }
+
+        encounterStream.seek(0x214); //again, is there a better way to do this
+
+        mEncounters.mOldRodRate = encounterStream.readInt32();
+        for(int i = 0; i < 5; i++){
+            mEncounters.mOldMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mOldMinLevels[i] = encounterStream.readUInt8();
+            encounterStream.skip(2); // is this padding? or is something here???
+            mEncounters.mOldRod[i] = encounterStream.readUInt32();
+        }
+
+        mEncounters.mGoodRodRate = encounterStream.readInt32();
+        for(int i = 0; i < 5; i++){
+            mEncounters.mGoodRodMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mGoodRodMinLevels[i] = encounterStream.readUInt8();
+            encounterStream.skip(2); // is this padding? or is something here???
+            mEncounters.mGoodRod[i] = encounterStream.readUInt32();
+        }
+
+        mEncounters.mSuperRodRate = encounterStream.readInt32();
+        for(int i = 0; i < 5; i++){
+            mEncounters.mSuperRodMaxLevels[i] = encounterStream.readUInt8();
+            mEncounters.mSuperRodMinLevels[i] = encounterStream.readUInt8();
+            encounterStream.skip(2); // is this padding? or is something here???
+            mEncounters.mSuperRod[i] = encounterStream.readUInt32();
+        }
     }
 
     return mEncounters;

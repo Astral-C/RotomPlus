@@ -20,13 +20,14 @@ class MapManager {
     std::vector<std::shared_ptr<Matrix>> mMatrices;
     std::vector<std::shared_ptr<MapChunkHeader>> mChunkHeaders;
 
-    std::shared_ptr<Palkia::Nitro::Archive> mMapTexArchive        = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mMatrixArchive        = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mAreaDataArchive      = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mBuildingArchive      = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mMapChunkArchive      = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive     = nullptr;
-    std::shared_ptr<Palkia::Nitro::Archive> mEncounterDataArchive = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMapTexArchive         = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMatrixArchive         = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mAreaDataArchive       = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mBuildingArchive       = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mIndoorBuildingArchive = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMapChunkArchive       = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive      = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mEncounterDataArchive  = nullptr;
 
 public:
     EventData mEvents;

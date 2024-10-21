@@ -12,6 +12,9 @@ std::string MapManager::GetChunkName(uint32_t idx){
 }
 
 void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locations){
+    mActiveMatrix = 0;
+    mMatrices.clear();
+    mChunkHeaders.clear();
     auto arm9 = rom->GetFile("@arm9.bin");
 
     if(Configs[rom->GetHeader().gameCode].compressedArm9){
@@ -19,9 +22,6 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locatio
     }
 
     mGameCode = rom->GetHeader().gameCode;
-
-    bStream::CFileStream dumpArm("arm9.bin", bStream::OpenMode::Out);
-    dumpArm.writeBytes(arm9->GetData(), arm9->GetSize());
 
     bStream::CMemoryStream armStream(arm9->GetData(), arm9->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     std::cout << "ARM9 Binary Size is 0x" << std::hex << arm9->GetSize() << std::dec << std::endl;
@@ -53,7 +53,11 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locatio
     mAreaDataArchive = std::make_shared<Palkia::Nitro::Archive>(areaDataStream);
     for(int i = 0; i  < mAreaDataArchive->GetFileCount(); i++){
         auto areaStream = bStream::CMemoryStream(mAreaDataArchive->GetFileByIndex(i)->GetData(), mAreaDataArchive->GetFileByIndex(i)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-        mAreas.push_back({.mBuildingSet = areaStream.readUInt16(), .mMapTileset = areaStream.readUInt16(), .mUnknown = areaStream.readUInt16(), .mLightType = areaStream.readUInt16()});
+        if(mGameCode == (uint32_t)'EGPI'){
+            mAreas.push_back({ .mBuildingSet = areaStream.readUInt16(), .mMapTileset = areaStream.readUInt16(), .mDynamicTextureType = areaStream.readUInt16(), .mAreaType = areaStream.readUInt8(), .mLightType = areaStream.readUInt16() });
+        } else {
+            mAreas.push_back({ .mBuildingSet = areaStream.readUInt16(), .mMapTileset = areaStream.readUInt16(), .mUnknown = areaStream.readUInt16(), .mLightType = areaStream.readUInt16() });
+        }
     }
     mAreas.shrink_to_fit();
 
@@ -84,6 +88,13 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locatio
 
     stream = bStream::CMemoryStream(encounterDataFile->GetData(), encounterDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mEncounterDataArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
+
+    if(mGameCode == (uint32_t)'EGPI'){
+        auto indoorBuildingFile = rom->GetFile(Configs[rom->GetHeader().gameCode].mIndoorBuildingPath);
+
+        stream = bStream::CMemoryStream(indoorBuildingFile->GetData(), indoorBuildingFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+        mIndoorBuildingArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
+    }
 
 }
 
@@ -168,6 +179,8 @@ void MapManager::SetActiveMatrix(uint32_t index){
     mActiveMatrix = index;
     MapGraphicsHandler::ClearModelCache();
 
+    bool exterior = true;
+
     if(mMatrices.size() == 0) return;
     for(auto chunk : mMatrices[index]->GetEntries()){
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
@@ -176,24 +189,30 @@ void MapManager::SetActiveMatrix(uint32_t index){
             
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
+            if(mAreas[chunkHeaderLocked->mAreaID].mAreaType == 0) exterior = false;
             //int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
             //chunk.mChunk->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
         }
     }
 
-    mMatrices[index]->LoadGraphics(mBuildingArchive, mMapTexArchive, mAreas, mNameID);
+    if(exterior){
+        mMatrices[index]->LoadGraphics(mBuildingArchive, mMapTexArchive, mAreas, mNameID);
+    } else {
+        mMatrices[index]->LoadGraphics(mIndoorBuildingArchive, mMapTexArchive, mAreas, mNameID);
+    }
 
     std::cout << std::dec << "Event data being loaded is :" << eventDataID << std::endl;
     if(eventDataID != 0xFFFF){
         // load events
-        //auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
-        //mEvents = LoadEvents(eventsFile);
+        auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
+        mEvents = LoadEvents(eventsFile);
     }
 
     // load encounter data
-    if(encounterID != 0xFFFF){
-        //auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
-        //mEncounters = LoadEncounterFile(encounterFile);
+    std::cout << std::dec << "Encounter data being loaded is :" << encounterID << std::endl;
+    if(encounterID != 0xFFFF && encounterID != 0xFF){
+        auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
+        mEncounters = LoadEncounterFile(encounterFile, mGameCode);
     }
 }
 

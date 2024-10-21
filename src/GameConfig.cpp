@@ -12,6 +12,7 @@ const GameConfig Platinum {
     "fielddata/encountdata/pl_enc_data.narc",
     "msgdata/pl_msg.narc",
     "data/mmodel/mmodel.narc",
+    "(none)",
     433,
     412,
     false
@@ -29,6 +30,7 @@ const GameConfig SoulSilver {
     "a/1/3/6", //encounters
     "a/0/2/7", // message
     "a/0/8/1", //move model
+    "a/1/4/8",
     279,
     237,
     true

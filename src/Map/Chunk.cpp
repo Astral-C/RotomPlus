@@ -142,21 +142,25 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
 
     mBuildings = std::vector<Building>();
 
+    uint32_t bgmPlateSize = 0x00000000;
+
     if(gameCode == (uint32_t)'EGPI'){
         uint16_t bgSig = stream.readUInt16();
         uint16_t bgDataLen = stream.readUInt16();
+        bgmPlateSize = bgDataLen + 0x04;
         stream.skip(bgDataLen);
-        std::cout << "Skipping sound plats for HGSS map and reading at " << std::hex << stream.tell() << std::dec << std::endl;
     }
 
     std::cout << "Reading chunk " << id << " with " << buildingsSize << " size building chunk" << std::endl;
 
+    stream.seek(bgmPlateSize + 0x10);
     for(int i = 0; i < 1024; i++){
         mMovementPermissions[i].first = stream.readUInt8();
         mMovementPermissions[i].second = stream.readUInt8();
     }
     
-    while(stream.tell() < permissionsSize + buildingsSize + 0x10){
+    stream.seek(bgmPlateSize + permissionsSize + 0x10);
+    while(stream.tell() < bgmPlateSize + permissionsSize + buildingsSize + 0x10){
         Building b;
         b.mModelID = stream.readUInt32();
         b.x = Palkia::fixed(stream.readInt32());
@@ -177,6 +181,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
 
     std::cout << "Read " << mBuildings.size() << " buildings" << std::endl; 
 
+    stream.seek(bgmPlateSize + permissionsSize + buildingsSize + 0x10);
     // read model buffer into memory so we can load this as and when we need to!
     mModelData = {};
     mModelData.resize(modelSize);
@@ -185,6 +190,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
     // TODO: figure out bdhc stuff! 
     mBDHCData = {};
     mBDHCData.resize(bdhcSize);
+    stream.seek(bgmPlateSize + permissionsSize + buildingsSize + modelSize + 0x10);
     stream.readBytesTo(mBDHCData.data(), bdhcSize);
 }
 
