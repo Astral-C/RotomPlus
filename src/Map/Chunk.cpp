@@ -51,7 +51,7 @@ void MapChunkHeader::Read(bStream::CStream& stream, uint32_t gameCode){
         break;
     }
 
-    case(uint32_t)'EGPI' : {
+    case (uint32_t)'EGPI' : {
         mEncDataID = stream.readUInt8();
         mAreaID = stream.readUInt8();
         uint16_t tmp = stream.readUInt16();
@@ -133,7 +133,7 @@ Building* MapChunk::Select(uint32_t id){
     return nullptr;
 }
 
-MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
+MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
     mID = id;
     uint32_t permissionsSize = stream.readUInt32();
     uint32_t buildingsSize = stream.readUInt32();
@@ -142,6 +142,13 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
 
     mBuildings = std::vector<Building>();
 
+    if(gameCode == (uint32_t)'EGPI'){
+        uint16_t bgSig = stream.readUInt16();
+        uint16_t bgDataLen = stream.readUInt16();
+        stream.skip(bgDataLen);
+        std::cout << "Skipping sound plats for HGSS map and reading at " << std::hex << stream.tell() << std::dec << std::endl;
+    }
+
     std::cout << "Reading chunk " << id << " with " << buildingsSize << " size building chunk" << std::endl;
 
     for(int i = 0; i < 1024; i++){
@@ -149,7 +156,6 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
         mMovementPermissions[i].second = stream.readUInt8();
     }
     
-    stream.seek(permissionsSize + 0x10);
     while(stream.tell() < permissionsSize + buildingsSize + 0x10){
         Building b;
         b.mModelID = stream.readUInt32();
@@ -171,7 +177,6 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
 
     std::cout << "Read " << mBuildings.size() << " buildings" << std::endl; 
 
-    stream.seek(permissionsSize + buildingsSize + 0x10);
     // read model buffer into memory so we can load this as and when we need to!
     mModelData = {};
     mModelData.resize(modelSize);
@@ -180,7 +185,6 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream){
     // TODO: figure out bdhc stuff! 
     mBDHCData = {};
     mBDHCData.resize(bdhcSize);
-    stream.seek(modelSize + permissionsSize + buildingsSize + 0x10);
     stream.readBytesTo(mBDHCData.data(), bdhcSize);
 }
 

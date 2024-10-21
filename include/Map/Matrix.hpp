@@ -30,7 +30,7 @@ public:
     Building* MoveBuilding(Building*, uint32_t, uint32_t, uint32_t, uint32_t);
     std::pair<Building*, std::pair<uint8_t, uint8_t>> Select(uint32_t);
     void Draw(glm::mat4, uint32_t);
-    void Load(std::shared_ptr<Palkia::Nitro::File>, std::weak_ptr<Palkia::Nitro::Archive>, std::vector<std::shared_ptr<MapChunkHeader>>&, std::shared_ptr<MapChunkHeader>);
+    void Load(std::shared_ptr<Palkia::Nitro::File>, std::weak_ptr<Palkia::Nitro::Archive>, std::vector<std::shared_ptr<MapChunkHeader>>&, std::shared_ptr<MapChunkHeader>, uint32_t);
 
     Matrix();
     ~Matrix();

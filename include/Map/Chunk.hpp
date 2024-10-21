@@ -71,7 +71,7 @@ public:
     void Draw(uint8_t cx, uint8_t cy, uint8_t cz, glm::mat4 v);
     void Save(std::shared_ptr<Palkia::Nitro::Archive> archive);
 
-    MapChunk(uint16_t, bStream::CStream&);
+    MapChunk(uint16_t, bStream::CStream&, uint32_t);
     ~MapChunk();
 };
 

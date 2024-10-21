@@ -51,7 +51,7 @@ void Matrix::Draw(glm::mat4 v, uint32_t placeNameID){
                 }
             }
 
-            if(mEntries[(y * mWidth) + x].mChunk != nullptr&& mEntries[(y * mWidth) + x].mChunkHeader.lock() && (mEntries[(y * mWidth) + x].mChunkHeader.lock()->mPlaceNameID == placeNameID || neighborHasPlace)){
+            if(mEntries[(y * mWidth) + x].mChunk != nullptr && mEntries[(y * mWidth) + x].mChunkHeader.lock() && (mEntries[(y * mWidth) + x].mChunkHeader.lock()->mPlaceNameID == placeNameID || neighborHasPlace)){
                 mEntries[(y * mWidth) + x].mChunk->Draw(x, y, mEntries[(y * mWidth) + x].mHeight * 8, v);
             }
         }
@@ -72,7 +72,7 @@ std::pair<Building*, std::pair<uint8_t, uint8_t>> Matrix::Select(uint32_t id){
     return {nullptr, {0,0}};
 }
 
-void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr<Palkia::Nitro::Archive> fieldDataArchive, std::vector<std::shared_ptr<MapChunkHeader>>& mHeaders, std::shared_ptr<MapChunkHeader> matrixHeader){
+void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr<Palkia::Nitro::Archive> fieldDataArchive, std::vector<std::shared_ptr<MapChunkHeader>>& mHeaders, std::shared_ptr<MapChunkHeader> matrixHeader, uint32_t gameCode){
     bStream::CMemoryStream stream(matrixData->GetData(), matrixData->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     
     mWidth = stream.readUInt8();
@@ -121,7 +121,7 @@ void Matrix::Load(std::shared_ptr<Palkia::Nitro::File> matrixData, std::weak_ptr
                 auto chunkData = fieldDataArchive.lock()->GetFileByIndex(mapChunkID);
                 bStream::CMemoryStream chunkStream(chunkData->GetData(), chunkData->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
-                mEntries[(y * mWidth) + x].mChunk = std::make_shared<MapChunk>(mapChunkID, chunkStream);
+                mEntries[(y * mWidth) + x].mChunk = std::make_shared<MapChunk>(mapChunkID, chunkStream, gameCode);
             } else {
                 mEntries[(y * mWidth) + x].mChunk = {};
             }

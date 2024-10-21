@@ -14,6 +14,7 @@
 
 class MapManager {
     uint32_t mNameID { 1 };
+    uint32_t mGameCode { 0 };
     std::vector<Area> mAreas;
     uint32_t mActiveMatrix { 0 };
     std::vector<std::shared_ptr<Matrix>> mMatrices;

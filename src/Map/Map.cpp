@@ -18,6 +18,11 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locatio
         Palkia::Nitro::Compression::BLZDecompress(arm9);
     }
 
+    mGameCode = rom->GetHeader().gameCode;
+
+    bStream::CFileStream dumpArm("arm9.bin", bStream::OpenMode::Out);
+    dumpArm.writeBytes(arm9->GetData(), arm9->GetSize());
+
     bStream::CMemoryStream armStream(arm9->GetData(), arm9->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     std::cout << "ARM9 Binary Size is 0x" << std::hex << arm9->GetSize() << std::dec << std::endl;
     armStream.seek(Configs[rom->GetHeader().gameCode].mChunkHeaderPtr);
@@ -181,14 +186,14 @@ void MapManager::SetActiveMatrix(uint32_t index){
     std::cout << std::dec << "Event data being loaded is :" << eventDataID << std::endl;
     if(eventDataID != 0xFFFF){
         // load events
-        auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
-        mEvents = LoadEvents(eventsFile);
+        //auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
+        //mEvents = LoadEvents(eventsFile);
     }
 
     // load encounter data
     if(encounterID != 0xFFFF){
-        auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
-        mEncounters = LoadEncounterFile(encounterFile);
+        //auto encounterFile = mEncounterDataArchive->GetFileByIndex(encounterID);
+        //mEncounters = LoadEncounterFile(encounterFile);
     }
 }
 
@@ -219,7 +224,7 @@ void MapManager::LoadZone(uint32_t nameID){
 
     for(auto [matrixIndex, header] : matrixIndices){
         mMatrices.push_back(std::make_shared<Matrix>());
-        if(matrixIndex < mMatrixArchive->GetFileCount()) mMatrices.back()->Load(mMatrixArchive->GetFileByIndex(matrixIndex), mMapChunkArchive, mChunkHeaders, header);
+        if(matrixIndex < mMatrixArchive->GetFileCount()) mMatrices.back()->Load(mMatrixArchive->GetFileByIndex(matrixIndex), mMapChunkArchive, mChunkHeaders, header, mGameCode);
     }
 
     SetActiveMatrix(0);
