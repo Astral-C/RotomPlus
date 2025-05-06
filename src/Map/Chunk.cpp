@@ -27,7 +27,7 @@ void MapChunkHeader::Read(bStream::CStream& stream, uint32_t gameCode){
     switch (gameCode){
     case (uint32_t)'EUPC': {
         mAreaID = stream.readUInt8();
-        mMoveModelID = stream.readUInt8();
+        mMoveModelID = stream.readUInt8() & 0b11110000;
         mMatrixID = stream.readUInt16();
         mScriptID = stream.readUInt16();
         mSpScriptID = stream.readUInt16();
@@ -66,7 +66,7 @@ void MapChunkHeader::Read(bStream::CStream& stream, uint32_t gameCode){
         mEventDataID = stream.readUInt16();
         mPlaceNameID = stream.readUInt8();
         mTextBoxType = stream.readUInt8();
-        
+
         uint32_t flags = stream.readUInt32();
         mKantoFlag = flags & 0b1;
         mWeatherID = flags & 0b01111111;
@@ -76,7 +76,7 @@ void MapChunkHeader::Read(bStream::CStream& stream, uint32_t gameCode){
         mBicycleFlag = flags & 0b00000010;
         break;
     }
-    
+
     default:
         break;
     }
@@ -86,7 +86,7 @@ void MapChunk::LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::sh
     bStream::CMemoryStream mapModelStream(mModelData.data(), mModelData.size(), bStream::Endianess::Little, bStream::OpenMode::In);
     Palkia::Formats::NSBMD* mapModel = new Palkia::Formats::NSBMD();
     mapModel->Load(mapModelStream);
-    
+
     bStream::CMemoryStream mapTexStrm(mapTex->GetData(), mapTex->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     Palkia::Formats::NSBTX mapTextureSet;
     mapTextureSet.Load(mapTexStrm);
@@ -106,7 +106,7 @@ void MapChunk::LoadGraphics(std::shared_ptr<Palkia::Nitro::File> mapTex, std::sh
         }
     }
 
-    
+
 
 }
 
@@ -158,7 +158,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
         mMovementPermissions[i].first = stream.readUInt8();
         mMovementPermissions[i].second = stream.readUInt8();
     }
-    
+
     stream.seek(bgmPlateSize + permissionsSize + 0x10);
     while(stream.tell() < bgmPlateSize + permissionsSize + buildingsSize + 0x10){
         Building b;
@@ -179,7 +179,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
         mBuildings.push_back(b);
     }
 
-    std::cout << "Read " << mBuildings.size() << " buildings" << std::endl; 
+    std::cout << "Read " << mBuildings.size() << " buildings" << std::endl;
 
     stream.seek(bgmPlateSize + permissionsSize + buildingsSize + 0x10);
     // read model buffer into memory so we can load this as and when we need to!
@@ -187,7 +187,7 @@ MapChunk::MapChunk(uint16_t id, bStream::CStream& stream, uint32_t gameCode){
     mModelData.resize(modelSize);
     stream.readBytesTo(mModelData.data(), modelSize);
 
-    // TODO: figure out bdhc stuff! 
+    // TODO: figure out bdhc stuff!
     mBDHCData = {};
     mBDHCData.resize(bdhcSize);
     stream.seek(bgmPlateSize + permissionsSize + buildingsSize + modelSize + 0x10);
@@ -209,10 +209,10 @@ void MapChunk::Save(std::shared_ptr<Palkia::Nitro::Archive> archive){
         stream.writeUInt8(mMovementPermissions[i].first);
         stream.writeUInt8(mMovementPermissions[i].second);
     }
-    
+
     for(auto building : mBuildings){
         stream.writeUInt32(building.mModelID);
-        
+
         stream.writeUInt32((uint32_t)(building.x * (1 << 12)));
         stream.writeUInt32((uint32_t)(building.y * (1 << 12)));
         stream.writeUInt32((uint32_t)(building.z * (1 << 12)));

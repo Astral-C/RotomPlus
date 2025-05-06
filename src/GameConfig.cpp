@@ -12,6 +12,7 @@ const GameConfig Platinum {
     "fielddata/encountdata/pl_enc_data.narc",
     "msgdata/pl_msg.narc",
     "data/mmodel/mmodel.narc",
+    "fielddata/mm_list/move_model_list.narc",
     "(none)",
     433,
     412,
@@ -30,6 +31,7 @@ const GameConfig SoulSilver {
     "a/1/3/6", //encounters
     "a/0/2/7", // message
     "a/0/8/1", //move model
+    "(none)",
     "a/1/4/8",
     279,
     237,
@@ -38,5 +40,5 @@ const GameConfig SoulSilver {
 
 std::map<uint32_t, const GameConfig> Configs {
     { (uint32_t)'EUPC', Platinum },
-    { (uint32_t)'EGPI', SoulSilver } 
+    { (uint32_t)'EGPI', SoulSilver }
 };

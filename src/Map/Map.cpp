@@ -67,6 +67,7 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locatio
     auto mapMatrixFile = rom->GetFile(Configs[rom->GetHeader().gameCode].mMapMatrixPath);
     auto eventDataFile = rom->GetFile(Configs[rom->GetHeader().gameCode].mZoneEventPath);
     auto encounterDataFile = rom->GetFile(Configs[rom->GetHeader().gameCode].mEncounterDataPath);
+    auto mmodelListFile = rom->GetFile(Configs[rom->GetHeader().gameCode].mMoveModelList);//Configs[rom->GetHeader().gameCode].mEncounterDataPath);
 
     stream = bStream::CMemoryStream(mapChunkFile->GetData(), mapChunkFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mMapChunkArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
@@ -82,12 +83,17 @@ void MapManager::Init(Palkia::Nitro::Rom* rom, std::vector<std::string>& locatio
 
     stream = bStream::CMemoryStream(mapMatrixFile->GetData(), mapMatrixFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mMatrixArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
-    
+
     stream = bStream::CMemoryStream(eventDataFile->GetData(), eventDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mEventDataArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
 
     stream = bStream::CMemoryStream(encounterDataFile->GetData(), encounterDataFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
     mEncounterDataArchive = std::make_shared<Palkia::Nitro::Archive>(stream);
+
+    if(mmodelListFile != nullptr){
+        stream = bStream::CMemoryStream(mmodelListFile->GetData(), mmodelListFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+        mMoveModelList = std::make_shared<Palkia::Nitro::Archive>(stream);
+    }
 
     if(mGameCode == (uint32_t)'EGPI'){
         auto indoorBuildingFile = rom->GetFile(Configs[rom->GetHeader().gameCode].mIndoorBuildingPath);
@@ -138,7 +144,7 @@ void MapManager::SaveMatrix(){
                     std::cout << "Old building pos is " << building.x << "  " << building.z << std::endl;
 
                     building.x = fmod(building.x, 256) - building.x / 256;
-                    building.z = fmod(building.z, 256) - building.z / 256;                    
+                    building.z = fmod(building.z, 256) - building.z / 256;
 
                     std::cout << "New building pos is " << building.x << "  " << building.z << std::endl;
 
@@ -152,7 +158,7 @@ void MapManager::SaveMatrix(){
 
             // save chunk
             chunk.mChunk->Save(mMapChunkArchive);
-            
+
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
         }
@@ -175,7 +181,8 @@ void MapManager::SaveMatrix(){
 void MapManager::SetActiveMatrix(uint32_t index){
     uint16_t encounterID = 0xFFFF;
     uint16_t eventDataID = 0xFFFF;
-    
+    uint8_t moveModelID = 0xFF;
+
     mActiveMatrix = index;
     MapGraphicsHandler::ClearModelCache();
 
@@ -186,9 +193,11 @@ void MapManager::SetActiveMatrix(uint32_t index){
         auto chunkHeaderLocked = chunk.mChunkHeader.lock();
         if(chunk.mChunk != nullptr && chunkHeaderLocked != nullptr && locationNames[chunkHeaderLocked->mPlaceNameID] == locationNames[mNameID]){
             std::cout << "Chunk Locked and Loading..." << std::endl;
-            
+
             if(encounterID == 0xFFFF && chunkHeaderLocked->mEncDataID != 0xFFFF) encounterID = chunkHeaderLocked->mEncDataID;
             if(eventDataID == 0xFFFF && chunkHeaderLocked->mEventDataID != 0xFFFF) eventDataID = chunkHeaderLocked->mEventDataID;
+            if(moveModelID == 0xFF && chunkHeaderLocked->mMoveModelID != 0xFF) moveModelID = chunkHeaderLocked->mMoveModelID;
+            std::cout << std::dec << "Move Model List ID on chunk is  " << (int)chunkHeaderLocked->mMoveModelID << std::endl;
             if(mAreas[chunkHeaderLocked->mAreaID].mAreaType == 0) exterior = false;
             //int texSet = mAreas[chunkHeaderLocked->mAreaID].mMapTileset;
             //chunk.mChunk->LoadGraphics(mMapTexArchive->GetFileByIndex(texSet), mBuildingArchive);
@@ -205,7 +214,9 @@ void MapManager::SetActiveMatrix(uint32_t index){
     if(eventDataID != 0xFFFF){
         // load events
         auto eventsFile = mEventDataArchive->GetFileByIndex(eventDataID);
-        mEvents = LoadEvents(eventsFile);
+        auto moveModelList = mMoveModelList->GetFileByIndex(moveModelID);
+        std::cout << std::dec << "Move Model List ID is " << (int)moveModelID << std::endl;
+        mEvents = LoadEvents(eventsFile, moveModelList);
     }
 
     // load encounter data
@@ -217,7 +228,7 @@ void MapManager::SetActiveMatrix(uint32_t index){
 }
 
 //Building* MapManager::Select(uint32_t id){
-//    return mMatrices[mActiveMatrix]->Select(id);   
+//    return mMatrices[mActiveMatrix]->Select(id);
 //}
 
 void MapManager::LoadZone(uint32_t nameID){

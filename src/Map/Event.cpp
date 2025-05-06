@@ -1,24 +1,43 @@
 #include "NDS/Assets/NSBMD.hpp"
+#include "NDS/Assets/NSBTX.hpp"
 #include "NDS/System/Archive.hpp"
+#include "UPointSpriteManager.hpp"
 #include "Map/Event.hpp"
 #include <format>
+#include <vector>
 
-std::unique_ptr<Palkia::Formats::NSBMD> mEventModel { nullptr };
+std::vector<std::vector<uint8_t>> mOverworldTextures;
 
-void LoadEventModel(Palkia::Nitro::Archive& arc){
-    if(mEventModel == nullptr){
-        mEventModel = std::make_unique<Palkia::Formats::NSBMD>();
-        bStream::CMemoryStream stream(arc.GetFileByIndex(421)->GetData(), arc.GetFileByIndex(421)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
-        mEventModel->Load(stream);
+void LoadEventModel(Palkia::Nitro::Archive& arc, CPointSpriteManager& manager){
+    auto evModel = std::make_shared<Palkia::Formats::NSBMD>();
+    bStream::CMemoryStream stream(arc.GetFileByIndex(421)->GetData(), arc.GetFileByIndex(421)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    evModel->Load(stream);
+
+    manager.Init(32, 421);
+
+    for(int x = 0; x <= 420; x++){
+        bStream::CMemoryStream texStrm(arc.GetFileByIndex(x)->GetData(), arc.GetFileByIndex(x)->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+        Palkia::Formats::NSBTX tex;
+        tex.Load(texStrm);
+        std::vector<uint8_t> texDataConverted = tex.GetTextures().Items()[0].second->Convert(*tex.GetPalettes().Items()[0].second);
+        manager.SetBillboardTextureData(texDataConverted.data(), x);
     }
 }
 
 void RenderEvent(glm::mat4 m, uint32_t id, uint32_t sprite){
-    if(mEventModel != nullptr) mEventModel->Render(m, id);
+
 }
 
-EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
+EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file, std::shared_ptr<Palkia::Nitro::File> moveModelFile){
     bStream::CMemoryStream eventStream(file->GetData(), file->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+    bStream::CMemoryStream moveModelStream(moveModelFile->GetData(), moveModelFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+
+    std::vector<uint16_t> moveModelIDs;
+    while(moveModelStream.getSize() - moveModelStream.tell() >= 2){
+        uint16_t id = moveModelStream.readUInt16();
+        std::cout << "read movemodel ID " << id << std::endl;
+        moveModelIDs.push_back(id);
+    }
 
     EventData events = {};
 
@@ -38,7 +57,7 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
         spawn.unk2 = eventStream.readUInt16();
         spawn.orientation = eventStream.readUInt16();
         spawn.unk3 = eventStream.readUInt16();
-        std::cout << std::format("Reading Spawn Evt w/ Position {},{},{}", spawn.x, spawn.y, spawn.z) << std::endl; 
+        std::cout << std::format("Reading Spawn Evt w/ Position {},{},{}", spawn.x, spawn.y, spawn.z) << std::endl;
         events.spawnEvents.emplace_back(std::move(spawn));
     }
 
@@ -49,7 +68,8 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
         Overworld overworld;
         overworld.eventType = EventType::Overworld;
         overworld.id = GetID();
-        overworld.spriteID = eventStream.readUInt16();
+        uint16_t spriteId = eventStream.readUInt16();
+        overworld.spriteID = spriteId < moveModelIDs.size() ? moveModelIDs.at(spriteId) : 0;
         overworld.overlayID = eventStream.readUInt16();
         overworld.movementType = eventStream.readUInt16();
         overworld.type = eventStream.readUInt16();
@@ -67,7 +87,7 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
         overworld.y = eventStream.readInt16();
         overworld.z = eventStream.readUInt32();
 
-        std::cout << std::format("Reading Overworld Evt w/ Position {},{},{}", overworld.x, overworld.y, overworld.z) << std::endl; 
+        std::cout << std::format("Reading Overworld Evt w/ Position {},{},{} sprite & overlay {} - {}", overworld.x, overworld.y, overworld.z, overworld.spriteID, overworld.spriteID) << std::endl;
 
         events.overworldEvents.emplace_back(std::move(overworld));
     }
@@ -84,7 +104,7 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
         warp.targetHeader = eventStream.readUInt16();
         warp.anchor = eventStream.readUInt16();
         warp.height = eventStream.readUInt32();
-        std::cout << std::format("Reading Warp Evt w/ Position {},{}", warp.x, warp.y) << std::endl; 
+        std::cout << std::format("Reading Warp Evt w/ Position {},{}", warp.x, warp.y) << std::endl;
         events.warpEvents.emplace_back(std::move(warp));
     }
 
@@ -103,7 +123,7 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file){
         trigger.z = eventStream.readUInt16();
         trigger.expect = eventStream.readUInt16();
         trigger.watch = eventStream.readUInt16();
-        std::cout << std::format("Reading Trigger Evt w/ Position {},{},{}", trigger.x, trigger.y, trigger.z) << std::endl; 
+        std::cout << std::format("Reading Trigger Evt w/ Position {},{},{}", trigger.x, trigger.y, trigger.z) << std::endl;
         events.triggerEvents.emplace_back(std::move(trigger));
     }
     events.triggerEvents.shrink_to_fit();

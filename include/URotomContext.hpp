@@ -12,9 +12,10 @@
 #include <NDS/System/Archive.hpp>
 #include "Map/Map.hpp"
 #include "Map/Event.hpp"
+#include "UPointSpriteManager.hpp"
 
 class URotomContext {
-	
+
 	uint32_t mCurrentMatrixIdx { 0 };
 	std::string mCurrentTool = "Map Editor";
 	std::array<std::string, 4> mEditorTools = {"Map Editor", "Chunk Editor", "Encounter Editor", "Trainer Editor"};
@@ -36,12 +37,13 @@ class URotomContext {
 
 	USceneCamera mCamera;
 	CAreaRenderer mAreaRenderer;
-	
+	CPointSpriteManager mPointRenderer;
+
 	uint32_t mMainDockSpaceID;
 	uint32_t mDockNodeLeftID;
 	uint32_t mDockNodeUpLeftID;
 	uint32_t mDockNodeDownLeftID;
-	
+
 	bool mOptionsOpen { false };
 	bool mAboutOpen { false };
 	bool mViewportIsFocused { false };

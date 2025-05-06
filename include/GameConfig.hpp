@@ -16,6 +16,7 @@ struct GameConfig {
     std::string mEncounterDataPath;
     std::string mMsgPath;
     std::string mMoveModel;
+    std::string mMoveModelList;
     std::string mIndoorBuildingPath;
     uint32_t mLocationNamesFileID;
     uint32_t mPokeNamesFileID;

@@ -28,18 +28,19 @@ class MapManager {
     std::shared_ptr<Palkia::Nitro::Archive> mMapChunkArchive       = nullptr;
     std::shared_ptr<Palkia::Nitro::Archive> mEventDataArchive      = nullptr;
     std::shared_ptr<Palkia::Nitro::Archive> mEncounterDataArchive  = nullptr;
+    std::shared_ptr<Palkia::Nitro::Archive> mMoveModelList         = nullptr;
 
 public:
     EventData mEvents;
     Encounter mEncounters;
     std::vector<std::shared_ptr<Matrix>>& GetMatrices() { return mMatrices; }
     std::vector<std::shared_ptr<MapChunkHeader>>& GetChunkHeaders() { return mChunkHeaders; }
-    
+
     void Init(Palkia::Nitro::Rom*,std::vector<std::string>&); // load archives needed for map loading
     void Save(Palkia::Nitro::Rom*);
-    
+
     std::string GetChunkName(uint32_t);
-    
+
     void SaveMatrix();
 
     std::shared_ptr<Matrix> GetActiveMatrix() { if(mMatrices.size() > 0) { return mMatrices[mActiveMatrix]; } else { return nullptr; } };

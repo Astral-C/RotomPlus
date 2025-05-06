@@ -5,6 +5,7 @@
 #include <memory>
 #include <NDS/System/FileSystem.hpp>
 #include "IDManager.hpp"
+#include "UPointSpriteManager.hpp"
 
 enum class EventType {
     Spawnable,
@@ -14,7 +15,7 @@ enum class EventType {
 };
 
 struct Event {
-    EventType eventType;   
+    EventType eventType;
 };
 
 // this one seemed off in the docs... weird!
@@ -43,27 +44,28 @@ struct Overworld : Event {
     uint16_t range;
     uint16_t unk1;
     uint16_t unk2;
-    
+
     uint16_t xrange;
     uint16_t yrange;
-    
+
     int16_t x;
     int16_t y;
     int32_t z;
+    CPointSprite* sprite { nullptr };
 };
 
 struct Warp : Event {
     uint32_t id;
     int16_t x;
     int16_t y;
-    
+
     uint16_t targetHeader;
     uint16_t anchor;
     uint32_t height;
 };
 
 struct Trigger : Event {
-    uint32_t id;   
+    uint32_t id;
     uint16_t scriptNum;
     int16_t x;
     int16_t y;
@@ -81,10 +83,10 @@ struct EventData {
     std::vector<Trigger> triggerEvents;
 };
 
-EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File>);
+EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File>,std::shared_ptr<Palkia::Nitro::File>);
 void SaveEvents(std::shared_ptr<Palkia::Nitro::File>, EventData);
 
-void LoadEventModel(Palkia::Nitro::Archive&);
+void LoadEventModel(Palkia::Nitro::Archive&, CPointSpriteManager&);
 void RenderEvent(glm::mat4, uint32_t, uint32_t);
 
 #endif

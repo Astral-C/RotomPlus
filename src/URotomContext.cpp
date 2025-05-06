@@ -13,9 +13,15 @@
 #include <glm/glm/ext/matrix_transform.hpp>
 #include <algorithm>
 #include <format>
+#include <vector>
 #include "NDS/Assets/NSBMD.hpp"
+#include "UPointSpriteManager.hpp"
 #include "Util.hpp"
 #include "GameConfig.hpp"
+
+namespace {
+    std::vector<CPointSprite> mBillboards {};
+}
 
 URotomContext::~URotomContext(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -27,29 +33,29 @@ URotomContext::~URotomContext(){
 	glDeleteTextures(1, &mPickTex);
 }
 
-URotomContext::URotomContext(){	
+URotomContext::URotomContext(){
 	srand(time(0));
 
 	ImGuiIO& io = ImGui::GetIO();
-	
+
 	if(std::filesystem::exists((std::filesystem::current_path() / "res" / "NotoSansJP-Regular.otf"))){
 		io.Fonts->AddFontFromFileTTF((std::filesystem::current_path() / "res" / "NotoSansJP-Regular.otf").string().c_str(), 16.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
 	}
 
 	if(std::filesystem::exists((std::filesystem::current_path() / "res" / "forkawesome.ttf"))){
 		static const ImWchar icons_ranges[] = { ICON_MIN_FK, ICON_MAX_16_FK, 0 };
-		ImFontConfig icons_config; 
-		icons_config.MergeMode = true; 
-		icons_config.PixelSnapH = true; 
+		ImFontConfig icons_config;
+		icons_config.MergeMode = true;
+		icons_config.PixelSnapH = true;
 		icons_config.GlyphMinAdvanceX = 16.0f;
 		io.Fonts->AddFontFromFileTTF((std::filesystem::current_path() / "res" / "forkawesome.ttf").string().c_str(), icons_config.GlyphMinAdvanceX, &icons_config, icons_ranges );
 	}
-	
+
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	mGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-	
-	Palkia::Formats::NSBMD test;
-	test.LoadIMD("test.imd");
+
+	//Palkia::Formats::NSBMD test;
+	//test.LoadIMD("test.imd");
 
 	mAreaRenderer.Init();
 }
@@ -86,12 +92,12 @@ void URotomContext::Render(float deltaTime) {
 	ImGuiIO& io = ImGui::GetIO();
 
 	RenderMenuBar();
-	
+
 	const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
 
 	ImGuiDockNodeFlags dockFlags = ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_NoDockingInCentralNode;
 	mMainDockSpaceID = ImGui::DockSpaceOverViewport(0, mainViewport, dockFlags);
-	
+
 	if(!bIsDockingSetUp){
 
 		glGenFramebuffers(1, &mFbo);
@@ -140,16 +146,16 @@ void URotomContext::Render(float deltaTime) {
 	ImGuiWindowClass mainWindowOverride;
 	mainWindowOverride.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
 	ImGui::SetNextWindowClass(&mainWindowOverride);
-	
+
 	ImGui::Begin("zoneWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 	ImGui::Text("Zones");
 		ImGui::Separator();
-		
+
 		// Render zones as listed by names list
 		if(ImGui::BeginCombo("##locations", mLocationNames[mCurrentLocationIdx].data())){
 			for(uint32_t i = 0; i < mLocationNames.size(); i++){
 					bool is_selected = (mCurrentLocationIdx == i);
-					if (ImGui::Selectable(mLocationNames[i].data(), is_selected)){						
+					if (ImGui::Selectable(mLocationNames[i].data(), is_selected)){
 						mCurrentLocation = mLocationNames[i];
 						mCurrentMatrixIdx = 0;
 						mSelectedBuilding = nullptr;
@@ -162,7 +168,7 @@ void URotomContext::Render(float deltaTime) {
 		}
 		ImGui::Separator();
 		ImGui::NewLine();
-		ImGui::NewLine();		
+		ImGui::NewLine();
 
 		ImGui::Text("Map Matrices");
 		ImGui::Separator();
@@ -192,7 +198,7 @@ void URotomContext::Render(float deltaTime) {
 	ImGui::Begin("chunkWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 		ImGui::Text("Current Map");
 		ImGui::Separator();
-		
+
 		ImGui::Text("Overworld Events");
 		if(ImGui::BeginCombo("##mapEventsOverworld", std::format("Event {}", mSelectedEventIdx).data())){
 			for(uint32_t i = 0; i < mMapManager.mEvents.overworldEvents.size(); i++){
@@ -218,9 +224,9 @@ void URotomContext::Render(float deltaTime) {
 
 			if(mSelectedEvent->eventType == EventType::Warp){
 				auto chunkHeaders = mMapManager.GetChunkHeaders();
-				uint16_t targetHeaderIdx = reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader; 
+				uint16_t targetHeaderIdx = reinterpret_cast<Warp*>(mSelectedEvent)->targetHeader;
 				auto targetHeader = chunkHeaders[targetHeaderIdx];
-				
+
 				ImGui::Text("Target Map");
 				std::string curName = std::format("{} : {}", mLocationNames[targetHeader->mPlaceNameID], mMapManager.GetChunkName(targetHeaderIdx));
 				if(ImGui::BeginCombo("##warpTargetCombo", curName.data())){
@@ -244,7 +250,7 @@ void URotomContext::Render(float deltaTime) {
 			}
 		}
 	ImGui::End();
-		
+
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
 	ImGui::SetNextWindowClass(&mainWindowOverride);
 	ImGui::Begin("viewportWindow");
@@ -292,12 +298,12 @@ void URotomContext::Render(float deltaTime) {
 
 				GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 				glDrawBuffers(2, attachments);
-			
+
 			}
-			
+
 			glViewport(0, 0, (uint32_t)winSize.x, (uint32_t)winSize.y);
 
-			
+
 			glClearColor(0.100f, 0.261f, 0.402f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -306,7 +312,7 @@ void URotomContext::Render(float deltaTime) {
 
 			mPrevWinWidth = winSize.x;
 			mPrevWinHeight = winSize.y;
-			
+
 			glm::mat4 projection, view;
 			projection = mCamera.GetProjectionMatrix();
 			view = mCamera.GetViewMatrix();
@@ -314,9 +320,20 @@ void URotomContext::Render(float deltaTime) {
 			// Render Models
 			glEnable(GL_DEPTH_TEST);
 			mMapManager.Draw(projection * view);
+			mPointRenderer.Draw(&mCamera);
+
+			std::size_t billboardsSize = mBillboards.size();
 
 			for(auto sprite : mMapManager.mEvents.overworldEvents){
-				RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id, sprite.overlayID);
+				//RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id, sprite.spriteID);
+				if(sprite.sprite == nullptr){
+                    mBillboards.push_back({glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+16, ((sprite.y)*16)-256+8), 12000, sprite.spriteID, 1, static_cast<int>(sprite.id)});
+                    sprite.sprite = &mBillboards.back();
+				}
+			}
+
+			if(mBillboards.size() != billboardsSize){
+                mPointRenderer.UpdateData(mBillboards);
 			}
 
 			for(auto warp : mMapManager.mEvents.warpEvents){
@@ -337,7 +354,7 @@ void URotomContext::Render(float deltaTime) {
 
 			if(ImGui::IsItemClicked(0) && !ImGuizmo::IsOver()){
 				ImVec2 mousePos = ImGui::GetMousePos();
-				
+
 				ImVec2 pickPos = {
 					mousePos.x - cursorPos.x,
 					winSize.y - (mousePos.y - cursorPos.y)
@@ -348,7 +365,7 @@ void URotomContext::Render(float deltaTime) {
 				uint32_t id = 0xFFFFFFFF;
 				glReadPixels(static_cast<GLint>(pickPos.x), static_cast<GLint>(pickPos.y), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, (void*)&id);
 
-				std::cout << "ID Select was " << std::hex << id << std::dec << std::endl; 
+				std::cout << "ID Select was " << std::hex << id << std::dec << std::endl;
 
 				if(id != 0){
 					bool selected = false;
@@ -398,7 +415,7 @@ void URotomContext::Render(float deltaTime) {
 					mSelectedBuilding->z = newPos.z - (512 * mSelectedChunk.y);
 
 				}
-				
+
 			} else if(mSelectedEvent != nullptr){
 				if(mSelectedEvent->eventType == EventType::Overworld){
 					Overworld* event = reinterpret_cast<Overworld*>(mSelectedEvent);
@@ -409,7 +426,8 @@ void URotomContext::Render(float deltaTime) {
 						event->x = ((newPos.x - 8 + 256) / 16);
 						event->y = ((newPos.z - 8 + 256) / 16);
 						event->z = (uint32_t)((newPos.y-8) * (1 << 12));
-
+						event->sprite->Position = glm::vec3(event->x, event->y, event->z);
+						mPointRenderer.UpdateData(mBillboards);
 					}
 				} else if(mSelectedEvent->eventType == EventType::Warp){
 					Warp* event = reinterpret_cast<Warp*>(mSelectedEvent);
@@ -421,7 +439,7 @@ void URotomContext::Render(float deltaTime) {
 						event->y = ((newPos.z - 8 + 256) / 16);
 						event->height = (uint32_t)((newPos.y-8) * (1 << 12));
 					}
-				} 
+				}
 			}
 
 			// gizmo operation on selected
@@ -476,20 +494,20 @@ void URotomContext::Render(float deltaTime) {
 				if(mMapManager.GetActiveMatrix()->GetHeight() == 1 && mMapManager.GetActiveMatrix()->GetWidth() == 1){
 					mSelectedChunkPtr = entries[0].mChunk;
 				}
-				
+
 				ImGui::BeginTable("##mapMatrixView", mMapManager.GetActiveMatrix()->GetWidth(), ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
 
 				for(std::size_t y = 0; y < mMapManager.GetActiveMatrix()->GetHeight(); y++){
 					for(std::size_t x = 0; x < mMapManager.GetActiveMatrix()->GetWidth(); x++){
 						if(entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk != nullptr){
 							bool isInLocation = mLocationNames[entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunkHeader.lock()->mPlaceNameID] == mCurrentLocation;
-							
+
 							if(isInLocation) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4, 0.8, 0.5, 1.0));
 							if(ImGui::Button(std::format("{}, {}", x, y).c_str(), ImVec2(-1.0,0))){
 								mSelectedChunkPtr = entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk;
 							}
 							if(isInLocation) ImGui::PopStyleColor();
-							
+
 						}
 						ImGui::TableNextColumn();
 					}
@@ -511,9 +529,9 @@ void URotomContext::Render(float deltaTime) {
 						for(std::size_t x = 0; x < 32; x++){
 							ImGui::TableNextColumn();
 							auto perms = mSelectedChunkPtr->GetMovementPermissions()[(y * 32) + x];
-							bool walkable = perms.second == 0x80; 
+							bool walkable = perms.second == 0x80;
 							if(walkable) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.05, 0.05, 1.0));
-							
+
 
 							if(ImGui::Button(std::format("{:x}##{},{},{},{}", perms.first, x, y, y, x).c_str(), ImVec2(-1.0, 0.0))){
 								//Show a tooltip with a combobox
@@ -566,17 +584,17 @@ void URotomContext::Render(float deltaTime) {
 				ImGui::InputInt("##walkingEncounterRate", (int*)&mMapManager.mEncounters.mWalkingEncounterRate);
 				ImGui::TableNextColumn();
 				ImGui::TableNextColumn();
-				
+
 				ImGui::Text("Rate");
 				ImGui::SameLine();
 				ImGui::InputInt("##surfingEncounterRate", (int*)&mMapManager.mEncounters.mSurfEncounterRate);
 				ImGui::TableNextColumn();
-				
+
 				ImGui::Text("Rate");
 				ImGui::SameLine();
 				ImGui::InputInt("##oldRodEncounterRate", (int*)&mMapManager.mEncounters.mOldRodRate);
 				ImGui::TableNextColumn();
-				
+
 				ImGui::Text("Rate");
 				ImGui::SameLine();
 				ImGui::InputInt("##goodRodEncounterRate", (int*)&mMapManager.mEncounters.mGoodRodRate);
@@ -601,7 +619,7 @@ void URotomContext::Render(float deltaTime) {
 						}
 						ImGui::EndCombo();
 					}
-					
+
 					ImGui::TableNextColumn();
 					ImGui::Text(std::format("{}%%", slotTitles[x]).data());
 					ImGui::SameLine();
@@ -768,7 +786,7 @@ void URotomContext::Render(float deltaTime) {
 					ImGui::Text("Max Level");
 					ImGui::SameLine();
 					ImGui::InputInt(std::format("##pokeSlot{}RockSmashMaxLevel", x).data(), (int*)&mMapManager.mEncounters.mRockSmashMaxLevels[x]);
-				
+
 					if(ImGui::BeginCombo(std::format("##pokeSlot{}RockSmash", x).data(), PokemonNames[mMapManager.mEncounters.mRockSmashPokemon[x]].data())){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mRockSmashPokemon[x] == i);
@@ -799,17 +817,17 @@ void URotomContext::Render(float deltaTime) {
 				ImGui::SameLine();
 				ImGui::InputInt("##walkingEncounterRate", (int*)&mMapManager.mEncounters.mWalkingEncounterRate);
 				ImGui::TableNextColumn();
-				
+
 				ImGui::Text("Rate");
 				ImGui::SameLine();
 				ImGui::InputInt("##surfingEncounterRate", (int*)&mMapManager.mEncounters.mSurfEncounterRate);
 				ImGui::TableNextColumn();
-				
+
 				ImGui::Text("Rate");
 				ImGui::SameLine();
 				ImGui::InputInt("##oldRodEncounterRate", (int*)&mMapManager.mEncounters.mOldRodRate);
 				ImGui::TableNextColumn();
-				
+
 				ImGui::Text("Rate");
 				ImGui::SameLine();
 				ImGui::InputInt("##goodRodEncounterRate", (int*)&mMapManager.mEncounters.mGoodRodRate);
@@ -835,7 +853,7 @@ void URotomContext::Render(float deltaTime) {
 						}
 						ImGui::EndCombo();
 					}
-					
+
 					ImGui::Text("Level");
 					ImGui::SameLine();
 					ImGui::InputInt(std::format("##pokeSlot{}WalkLevel", x).data(), (int*)&mMapManager.mEncounters.mWalkingLevel[x]);
@@ -1132,7 +1150,7 @@ void URotomContext::Render(float deltaTime) {
 		ImGui::SetNextWindowPos(ImVec2(mPermsTooltipX - 25, mPermsTooltipY - 22.5 + scroll));
 		ImGui::SetNextWindowSize(ImVec2(100, 65));
 		ImGui::Begin("##mPermsTooltip", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-		
+
 		char buf[3] = {};
 		sprintf(buf, "%x", mSelectedChunkPtr->GetMovementPermissions()[(mSelectedY * 32) + mSelectedX].first);
 		ImGui::PushItemWidth(-1.0f);
@@ -1218,11 +1236,11 @@ void URotomContext::RenderMenuBar() {
 
 				mMapManager.Init(mRom.get(), mLocationNames);
 
-				auto mmodelArchive = mRom->GetFile(Configs[mRom->GetHeader().gameCode].mMoveModel); 
+				auto mmodelArchive = mRom->GetFile(Configs[mRom->GetHeader().gameCode].mMoveModel);
 				bStream::CMemoryStream mmodelArchiveStream(mmodelArchive->GetData(), mmodelArchive->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
 				auto mmodels = Palkia::Nitro::Archive(mmodelArchiveStream);
-				LoadEventModel(mmodels);
+				LoadEventModel(mmodels, mPointRenderer);
 			//}
 			//catch (std::runtime_error e) {
 			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
@@ -1295,7 +1313,7 @@ void URotomContext::RenderMenuBar() {
 
 		ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
 		ImGui::Text("Rotom");
-		
+
 		ImGui::Separator();
 
 		textWidth = ImGui::CalcTextSize("https://github.com/Astral-C/Rotom").x;
