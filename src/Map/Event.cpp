@@ -68,8 +68,7 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file, std::shared_ptr<
         Overworld overworld;
         overworld.eventType = EventType::Overworld;
         overworld.id = GetID();
-        uint16_t spriteId = eventStream.readUInt16();
-        overworld.spriteID = spriteId < moveModelIDs.size() ? moveModelIDs.at(spriteId) : 0;
+        overworld.owID = eventStream.readUInt16();
         overworld.overlayID = eventStream.readUInt16();
         overworld.movementType = eventStream.readUInt16();
         overworld.type = eventStream.readUInt16();
@@ -87,7 +86,7 @@ EventData LoadEvents(std::shared_ptr<Palkia::Nitro::File> file, std::shared_ptr<
         overworld.y = eventStream.readInt16();
         overworld.z = eventStream.readUInt32();
 
-        std::cout << std::format("Reading Overworld Evt w/ Position {},{},{} sprite & overlay {} - {}", overworld.x, overworld.y, overworld.z, overworld.spriteID, overworld.spriteID) << std::endl;
+        std::cout << std::format("Reading Overworld Evt w/ Position {},{},{}", overworld.x, overworld.y, overworld.z) << std::endl;
 
         events.overworldEvents.emplace_back(std::move(overworld));
     }
@@ -147,7 +146,7 @@ void SaveEvents(std::shared_ptr<Palkia::Nitro::File> file, EventData events){
 
     eventStream.writeUInt32(events.overworldEvents.size());
     for(auto overworld : events.overworldEvents){
-        eventStream.writeUInt16(overworld.spriteID);
+        eventStream.writeUInt16(overworld.owID);
         eventStream.writeUInt16(overworld.overlayID);
         eventStream.writeUInt16(overworld.movementType);
         eventStream.writeUInt16(overworld.type);

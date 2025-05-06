@@ -34,7 +34,7 @@ struct Spawnable : Event {
 
 struct Overworld : Event {
     uint32_t id;
-    uint16_t spriteID;
+    uint16_t owID;
     uint16_t overlayID;
     uint16_t movementType;
     uint16_t type;

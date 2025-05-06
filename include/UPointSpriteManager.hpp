@@ -9,7 +9,7 @@
 typedef struct {
     glm::vec3 Position;
     int32_t SpriteSize;
-    int32_t Texture;
+    uint32_t Texture;
     int32_t SizeFixed;
     int32_t ID;
 } CPointSprite;

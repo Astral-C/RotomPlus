@@ -21,6 +21,7 @@
 
 namespace {
     std::vector<CPointSprite> mBillboards {};
+    std::map<uint32_t, uint32_t> mOverworldSpriteIDs {};
 }
 
 URotomContext::~URotomContext(){
@@ -327,7 +328,8 @@ void URotomContext::Render(float deltaTime) {
 			for(auto sprite : mMapManager.mEvents.overworldEvents){
 				//RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id, sprite.spriteID);
 				if(sprite.sprite == nullptr){
-                    mBillboards.push_back({glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+16, ((sprite.y)*16)-256+8), 12000, sprite.spriteID, 1, static_cast<int>(sprite.id)});
+				    // get sprite ID
+                    mBillboards.push_back({glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+16, ((sprite.y)*16)-256+8), 12000, mOverworldSpriteIDs[sprite.overlayID], 1, static_cast<int>(sprite.id)});
                     sprite.sprite = &mBillboards.back();
 				}
 			}
@@ -1241,6 +1243,19 @@ void URotomContext::RenderMenuBar() {
 
 				auto mmodels = Palkia::Nitro::Archive(mmodelArchiveStream);
 				LoadEventModel(mmodels, mPointRenderer);
+
+				// Load sprite ID list for overworld evs
+				auto overlay = mRom->GetOverlays9()[5].file.lock();
+				// table offest 0x2BC34
+				bStream::CMemoryStream owTableStream(overlay->GetData(), overlay->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+				owTableStream.seek(0x2BC34); // todo: load this from game config
+				uint32_t entryID = 0;
+				while(entryID != 0xFFFF){
+					entryID = owTableStream.readUInt32();
+				    uint32_t spriteID = owTableStream.readUInt32();
+				    mOverworldSpriteIDs[entryID] = spriteID;
+				}
+
 			//}
 			//catch (std::runtime_error e) {
 			//	std::cout << "Failed to load rom " << FilePath << "! Exception: " << e.what() << "\n";
