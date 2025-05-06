@@ -329,7 +329,7 @@ void URotomContext::Render(float deltaTime) {
 				//RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+8, ((sprite.y)*16)-256+8)), sprite.id, sprite.spriteID);
 				if(sprite.sprite == nullptr){
 				    // get sprite ID
-                    mBillboards.push_back({glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z)+16, ((sprite.y)*16)-256+8), 12000, mOverworldSpriteIDs[sprite.overlayID], 1, static_cast<int>(sprite.id)});
+                    mBillboards.push_back({glm::vec3(((sprite.x)*16)-256+8, Palkia::fixed(sprite.z) + ((mMapManager.GetActiveMatrix()->GetEntries()[(((sprite.y + 128) / 256) * mMapManager.GetActiveMatrix()->GetWidth()) + ((sprite.x + 128) / 256)].mHeight+1)*8), ((sprite.y)*16)-256+8), 12000, mOverworldSpriteIDs[sprite.overlayID], 1, static_cast<int>(sprite.id)});
                     sprite.sprite = &mBillboards.back();
 				}
 			}
@@ -339,7 +339,7 @@ void URotomContext::Render(float deltaTime) {
 			}
 
 			for(auto warp : mMapManager.mEvents.warpEvents){
-				glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(((warp.x)*16)-256+8, ((Palkia::fixed(warp.height)+1)*16), ((warp.y)*16)-256+8));
+				glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(((warp.x)*16)-256+8, ((Palkia::fixed(warp.height)+1)*16) + ((mMapManager.GetActiveMatrix()->GetEntries()[(((warp.y + 128) / 256) * mMapManager.GetActiveMatrix()->GetWidth()) + ((warp.x + 128) / 256)].mHeight)*8), ((warp.y)*16)-256+8));
 				m = glm::scale(m, glm::vec3(0.025f, 0.025f, 0.025f));
 				mAreaRenderer.DrawShape(&mCamera, AreaRenderShape::BOX_CENTER, warp.id, m, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 				//RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256, Palkia::fixed(sprite.z), ((sprite.y+1)*16)-256)));
@@ -555,6 +555,10 @@ void URotomContext::Render(float deltaTime) {
 			}
 			ImGui::EndChild();
 			ImGui::GetStyle().CellPadding = padding;
+		}
+
+		if(mCurrentTool == "Trainer Editor" && mRom != nullptr){
+
 		}
 
 		if(mCurrentTool == "Encounter Editor" && mRom != nullptr){
