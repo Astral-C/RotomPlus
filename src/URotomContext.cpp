@@ -26,13 +26,17 @@
 namespace {
     std::vector<CPointSprite> mBillboards {};
     std::map<uint32_t, uint32_t> mOverworldSpriteIDs {};
-    std::array<uint32_t, 9> mAreaTypeImages { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+    std::array<uint32_t, 9> mAreaTypeImages {};
+    std::array<uint32_t, 539> mPokeIcons {};
 }
 
 URotomContext::~URotomContext(){
-    for(int i = 0; i < 9; i++){
-        if(mAreaTypeImages[i] != 0xFFFFFFFF) glDeleteTextures(1,&mAreaTypeImages[i]);
+    for(int i = 0; i < mAreaTypeImages.size(); i++){
+        if(mAreaTypeImages[i] != 0xFFFFFFFF) glDeleteTextures(1, &mAreaTypeImages[i]);
     }
+
+    glDeleteTextures(mPokeIcons.size(), &mPokeIcons[0]);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
@@ -44,6 +48,9 @@ URotomContext::~URotomContext(){
 
 URotomContext::URotomContext(){
 	srand(time(0));
+
+	mAreaTypeImages.fill(0xFFFFFFFF);
+	mPokeIcons.fill(0xFFFFFFFF);
 
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -467,9 +474,9 @@ void URotomContext::Render(float deltaTime) {
 				//Ow
 				ImGuiStyle& style = ImGui::GetStyle();
 				float padY = style.FramePadding.y;
-				style.FramePadding.y = 10;
+				style.FramePadding.y = 15;
 
-				ImGui::SetNextItemWidth(175);
+				ImGui::SetNextItemWidth(200);
 				if(ImGui::BeginCombo("##areaWinGraSelect", nullptr, ImGuiComboFlags_CustomPreview)){
                     for(uint32_t i = 0; i < mAreaTypeImages.size(); i++){
 								bool is_selected = (mSelectedChunkHeader->mTextBoxType == i);
@@ -486,7 +493,7 @@ void URotomContext::Render(float deltaTime) {
 				}
 
 				if(ImGui::BeginComboPreview()){
-				    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10); // hate
+				    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-15); // hate
                     ImGui::Image(mAreaTypeImages[mSelectedChunkHeader->mTextBoxType], {136, 40});
                     ImGui::EndComboPreview();
 				}
@@ -562,6 +569,7 @@ void URotomContext::Render(float deltaTime) {
 				if(mMapManager.GetActiveMatrix()->GetHeight() > 1 && mMapManager.GetActiveMatrix()->GetHeight() > 1){
 					if(ImGui::Button(ICON_FK_BACKWARD " Back", ImVec2(-1, 0))){
 						mSelectedChunkPtr = nullptr;
+						mSelectedChunkHeader = nullptr;
 					}
 				}
 				if(mSelectedChunkPtr != nullptr){
@@ -893,16 +901,28 @@ void URotomContext::Render(float deltaTime) {
 					ImGui::TableNextColumn();
 					ImGui::Text(std::format("{}%%", slotTitles[x]).data());
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Walk", x).data(), PokemonNames[mMapManager.mEncounters.mWalking[x]].data())){
+
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Walk", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mWalking[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mWalking[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
 					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mWalking[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mWalking[x]].data());
+                        ImGui::EndComboPreview();
+					}
+
 
 					ImGui::Text("Level");
 					ImGui::SameLine();
@@ -913,15 +933,25 @@ void URotomContext::Render(float deltaTime) {
 						ImGui::TableNextColumn();
 						ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
 						ImGui::SameLine();
-						if(ImGui::BeginCombo(std::format("##pokeSlot{}Surf", x).data(), PokemonNames[mMapManager.mEncounters.mSurf[x]].data())){
+						if(ImGui::BeginCombo(std::format("##pokeSlot{}Surf", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 							for(uint32_t i = 0; i < PokemonNames.size(); i++){
 									bool is_selected = (mMapManager.mEncounters.mSurf[x] == i);
-									if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									ImGui::Image(mPokeIcons[i], {32,32});
+									ImGui::SameLine();
+									if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 										mMapManager.mEncounters.mSurf[x] = i;
 									}
 									if (is_selected) ImGui::SetItemDefaultFocus();
 							}
 							ImGui::EndCombo();
+						}
+						if(ImGui::BeginComboPreview()){
+						    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                            ImGui::Image(mPokeIcons[mMapManager.mEncounters.mSurf[x]], {32, 32});
+                            ImGui::SameLine();
+                            ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                            ImGui::Text(PokemonNames[mMapManager.mEncounters.mSurf[x]].data());
+                            ImGui::EndComboPreview();
 						}
 
 						ImGui::Text("Max Level");
@@ -935,16 +965,27 @@ void URotomContext::Render(float deltaTime) {
 						ImGui::TableNextColumn();
 						ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
 						ImGui::SameLine();
-						if(ImGui::BeginCombo(std::format("##pokeSlot{}OldRod", x).data(), PokemonNames[mMapManager.mEncounters.mOldRod[x]].data())){
+						if(ImGui::BeginCombo(std::format("##pokeSlot{}OldRod", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 							for(uint32_t i = 0; i < PokemonNames.size(); i++){
 									bool is_selected = (mMapManager.mEncounters.mOldRod[x] == i);
-									if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									ImGui::Image(mPokeIcons[i], {32,32});
+									ImGui::SameLine();
+									if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 										mMapManager.mEncounters.mOldRod[x] = i;
 									}
 									if (is_selected) ImGui::SetItemDefaultFocus();
 							}
 							ImGui::EndCombo();
 						}
+						if(ImGui::BeginComboPreview()){
+						    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                            ImGui::Image(mPokeIcons[mMapManager.mEncounters.mOldRod[x]], {32, 32});
+                            ImGui::SameLine();
+                            ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                            ImGui::Text(PokemonNames[mMapManager.mEncounters.mOldRod[x]].data());
+                            ImGui::EndComboPreview();
+						}
+
 
 						ImGui::Text("Max Level");
 						ImGui::SameLine();
@@ -957,15 +998,25 @@ void URotomContext::Render(float deltaTime) {
 						ImGui::TableNextColumn();
 						ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
 						ImGui::SameLine();
-						if(ImGui::BeginCombo(std::format("##pokeSlot{}GoodRod", x).data(), PokemonNames[mMapManager.mEncounters.mGoodRod[x]].data())){
+						if(ImGui::BeginCombo(std::format("##pokeSlot{}GoodRod", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 							for(uint32_t i = 0; i < PokemonNames.size(); i++){
 									bool is_selected = (mMapManager.mEncounters.mGoodRod[x] == i);
-									if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									ImGui::Image(mPokeIcons[i], {32,32});
+									ImGui::SameLine();
+									if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 										mMapManager.mEncounters.mGoodRod[x] = i;
 									}
 									if (is_selected) ImGui::SetItemDefaultFocus();
 							}
 							ImGui::EndCombo();
+						}
+						if(ImGui::BeginComboPreview()){
+						    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                            ImGui::Image(mPokeIcons[mMapManager.mEncounters.mGoodRod[x]], {32, 32});
+                            ImGui::SameLine();
+                            ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                            ImGui::Text(PokemonNames[mMapManager.mEncounters.mGoodRod[x]].data());
+                            ImGui::EndComboPreview();
 						}
 
 						ImGui::Text("Max Level");
@@ -979,15 +1030,25 @@ void URotomContext::Render(float deltaTime) {
 						ImGui::TableNextColumn();
 						ImGui::Text(std::format("{}%%", fiveSlotTitles[x]).data());
 						ImGui::SameLine();
-						if(ImGui::BeginCombo(std::format("##pokeSlot{}SuperRod", x).data(), PokemonNames[mMapManager.mEncounters.mSuperRod[x]].data())){
+						if(ImGui::BeginCombo(std::format("##pokeSlot{}SuperRod", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 							for(uint32_t i = 0; i < PokemonNames.size(); i++){
 									bool is_selected = (mMapManager.mEncounters.mSuperRod[x] == i);
-									if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+									ImGui::Image(mPokeIcons[i], {32,32});
+									ImGui::SameLine();
+									if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 										mMapManager.mEncounters.mSuperRod[x] = i;
 									}
 									if (is_selected) ImGui::SetItemDefaultFocus();
 							}
 							ImGui::EndCombo();
+						}
+						if(ImGui::BeginComboPreview()){
+						    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                            ImGui::Image(mPokeIcons[mMapManager.mEncounters.mSuperRod[x]], {32, 32});
+                            ImGui::SameLine();
+                            ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                            ImGui::Text(PokemonNames[mMapManager.mEncounters.mSuperRod[x]].data());
+                            ImGui::EndComboPreview();
 						}
 
 						ImGui::Text("Max Level");
@@ -1017,15 +1078,25 @@ void URotomContext::Render(float deltaTime) {
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("10%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Morning", x).data(), PokemonNames[mMapManager.mEncounters.mMorningPokemon[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Morning", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mMorningPokemon[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mMorningPokemon[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
+					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mMorningPokemon[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mMorningPokemon[x]].data());
+                        ImGui::EndComboPreview();
 					}
 				}
 
@@ -1033,15 +1104,25 @@ void URotomContext::Render(float deltaTime) {
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("10%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Night", x).data(), PokemonNames[mMapManager.mEncounters.mNightPokemon[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Night", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mNightPokemon[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mNightPokemon[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
+					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mNightPokemon[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mNightPokemon[x]].data());
+                        ImGui::EndComboPreview();
 					}
 				}
 
@@ -1049,15 +1130,25 @@ void URotomContext::Render(float deltaTime) {
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("20%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Swarm", x).data(), PokemonNames[mMapManager.mEncounters.mSwarmPokemon[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Swarm", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mSwarmPokemon[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mSwarmPokemon[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
+					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mSwarmPokemon[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mSwarmPokemon[x]].data());
+                        ImGui::EndComboPreview();
 					}
 				}
 				ImGui::EndTable();
@@ -1078,15 +1169,25 @@ void URotomContext::Render(float deltaTime) {
 
 				for(int x = 0; x < 4; x++){
 					ImGui::TableNextColumn();
-					if(ImGui::BeginCombo(std::format("##pokeSlotRadar{}", x).data(), PokemonNames[mMapManager.mEncounters.mRadarPokemon[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlotRadar{}", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mRadarPokemon[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mRadarPokemon[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
+					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mRadarPokemon[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mRadarPokemon[x]].data());
+                        ImGui::EndComboPreview();
 					}
 				}
 
@@ -1111,63 +1212,77 @@ void URotomContext::Render(float deltaTime) {
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("4%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Ruby", x).data(), PokemonNames[mMapManager.mEncounters.mRuby[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Ruby", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mRuby[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mRuby[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
 					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mRuby[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mRuby[x]].data());
+                        ImGui::EndComboPreview();
+					}
 				}
 
 				ImGui::TableNextColumn();
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("4%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Sapphire", x).data(), PokemonNames[mMapManager.mEncounters.mSapphire[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Sapphire", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mSapphire[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mSapphire[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
 					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mSapphire[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mSapphire[x]].data());
+                        ImGui::EndComboPreview();
+					}
 				}
 
 				ImGui::TableNextColumn();
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("4%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}Emerald", x).data(), PokemonNames[mMapManager.mEncounters.mEmerald[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}Emerald", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mEmerald[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mEmerald[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
 					}
-				}
-
-				ImGui::TableNextColumn();
-				for(int x = 0; x < 2; x++){
-					ImGui::Text("4%%");
-					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}FireRed", x).data(), PokemonNames[mMapManager.mEncounters.mFireRed[x]].data())){
-						for(uint32_t i = 0; i < PokemonNames.size(); i++){
-								bool is_selected = (mMapManager.mEncounters.mFireRed[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
-									mMapManager.mEncounters.mFireRed[x] = i;
-								}
-								if (is_selected) ImGui::SetItemDefaultFocus();
-						}
-						ImGui::EndCombo();
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mEmerald[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mEmerald[x]].data());
+                        ImGui::EndComboPreview();
 					}
 				}
 
@@ -1175,15 +1290,51 @@ void URotomContext::Render(float deltaTime) {
 				for(int x = 0; x < 2; x++){
 					ImGui::Text("4%%");
 					ImGui::SameLine();
-					if(ImGui::BeginCombo(std::format("##pokeSlot{}LeafGreen", x).data(), PokemonNames[mMapManager.mEncounters.mLeafGreen[x]].data())){
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}FireRed", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
+						for(uint32_t i = 0; i < PokemonNames.size(); i++){
+								bool is_selected = (mMapManager.mEncounters.mFireRed[x] == i);
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
+									mMapManager.mEncounters.mFireRed[x] = i;
+								}
+								if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mFireRed[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mFireRed[x]].data());
+                        ImGui::EndComboPreview();
+					}
+				}
+
+				ImGui::TableNextColumn();
+				for(int x = 0; x < 2; x++){
+					ImGui::Text("4%%");
+					ImGui::SameLine();
+					if(ImGui::BeginCombo(std::format("##pokeSlot{}LeafGreen", x).data(), nullptr, ImGuiComboFlags_CustomPreview)){
 						for(uint32_t i = 0; i < PokemonNames.size(); i++){
 								bool is_selected = (mMapManager.mEncounters.mLeafGreen[x] == i);
-								if (ImGui::Selectable(PokemonNames[i].data(), is_selected)){
+								ImGui::Image(mPokeIcons[i], {32,32});
+								ImGui::SameLine();
+								if (ImGui::Selectable(PokemonNames[i].data(), is_selected, ImGuiSelectableFlags_SpanAvailWidth, {-1, 32})){
 									mMapManager.mEncounters.mLeafGreen[x] = i;
 								}
 								if (is_selected) ImGui::SetItemDefaultFocus();
 						}
 						ImGui::EndCombo();
+					}
+					if(ImGui::BeginComboPreview()){
+					    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10);
+                        ImGui::Image(mPokeIcons[mMapManager.mEncounters.mLeafGreen[x]], {32, 32});
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosY(   ImGui::GetCursorPosY()+10);
+                        ImGui::Text(PokemonNames[mMapManager.mEncounters.mLeafGreen[x]].data());
+                        ImGui::EndComboPreview();
 					}
 				}
 
@@ -1271,7 +1422,6 @@ void URotomContext::RenderMenuBar() {
 				auto areaWinArc = mRom->GetFile("arc/area_win_gra.narc");
 				bStream::CMemoryStream areaWinStrm(areaWinArc->GetData(), areaWinArc->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 
-
 				auto areaWin = Palkia::Nitro::Archive(areaWinStrm);
 				for(int i = 0; i < 9; i++){
                     auto ncgrFile = areaWin.GetFileByIndex(i * 2);
@@ -1299,6 +1449,40 @@ void URotomContext::RenderMenuBar() {
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 136, 40, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+                    glBindTexture(GL_TEXTURE_2D, 0);
+
+				}
+
+				// load poke icons, there are. a lot of them! this could be a bit slow.
+                glGenTextures(mPokeIcons.size(), &mPokeIcons[0]);
+                auto pokeIconArcFile = mRom->GetFile("poketool/icongra/pl_poke_icon.narc");
+				bStream::CMemoryStream pokeIconStrm(pokeIconArcFile->GetData(), pokeIconArcFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+                auto pokeIconArc = Palkia::Nitro::Archive(pokeIconStrm);
+
+                Palkia::Formats::NCLR pokePalette;
+                auto pPalFile = pokeIconArc.GetFileByIndex(0);
+                bStream::CMemoryStream pPalStream(pPalFile->GetData(), pPalFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+                pokePalette.Load(pPalStream);
+				for(int i = 0; i < mPokeIcons.size(); i++){
+                    auto ncgrFile = pokeIconArc.GetFileByIndex(i+7);
+
+                    Palkia::Formats::NCGR ncgr;
+                    bStream::CMemoryStream ncgrStrm(ncgrFile->GetData(), ncgrFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+
+                    ncgr.Load(ncgrStrm);
+
+                    auto data = ncgr.Convert(32, 32, pokePalette);
+
+                    glBindTexture(GL_TEXTURE_2D, mPokeIcons[i]);
+
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
                     glBindTexture(GL_TEXTURE_2D, 0);
 
 				}
