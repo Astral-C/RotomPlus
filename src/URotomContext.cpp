@@ -15,16 +15,24 @@
 #include <format>
 #include <vector>
 #include "NDS/Assets/NSBMD.hpp"
+#include "NDS/Assets/NCLR.hpp"
+#include "NDS/Assets/NCGR.hpp"
 #include "UPointSpriteManager.hpp"
 #include "Util.hpp"
 #include "GameConfig.hpp"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 namespace {
     std::vector<CPointSprite> mBillboards {};
     std::map<uint32_t, uint32_t> mOverworldSpriteIDs {};
+    std::array<uint32_t, 9> mAreaTypeImages { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
 }
 
 URotomContext::~URotomContext(){
+    for(int i = 0; i < 9; i++){
+        if(mAreaTypeImages[i] != 0xFFFFFFFF) glDeleteTextures(1,&mAreaTypeImages[i]);
+    }
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
@@ -339,9 +347,9 @@ void URotomContext::Render(float deltaTime) {
 			}
 
 			for(auto warp : mMapManager.mEvents.warpEvents){
-				glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(((warp.x)*16)-256+8, ((Palkia::fixed(warp.height)+1)*16) + ((mMapManager.GetActiveMatrix()->GetEntries()[(((warp.y + 128) / 256) * mMapManager.GetActiveMatrix()->GetWidth()) + ((warp.x + 128) / 256)].mHeight)*8), ((warp.y)*16)-256+8));
+				glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(((warp.x)*16)-256+8, ((Palkia::fixed(warp.height)+1)*16) + ((mMapManager.GetActiveMatrix()->GetEntries()[(((warp.y + 128) / 256) * mMapManager.GetActiveMatrix()->GetWidth()) + ((warp.x + 128) / 256)].mHeight+1)*8), ((warp.y)*16)-256+8));
 				m = glm::scale(m, glm::vec3(0.025f, 0.025f, 0.025f));
-				mAreaRenderer.DrawShape(&mCamera, AreaRenderShape::BOX_CENTER, warp.id, m, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				mAreaRenderer.DrawShape(&mCamera, AreaRenderShape::BOX_BASE, warp.id, m, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 				//RenderEvent(projection * view * glm::translate(glm::mat4(1.0f), glm::vec3(((sprite.x)*16)-256, Palkia::fixed(sprite.z), ((sprite.y+1)*16)-256)));
 			}
 
@@ -455,9 +463,39 @@ void URotomContext::Render(float deltaTime) {
 		float scroll = 0.0f;
 		if(mCurrentTool == "Chunk Editor" && mRom != nullptr){
 
+		    if(mSelectedChunkPtr != nullptr && mSelectedChunkHeader != nullptr){
+				//Ow
+				ImGuiStyle& style = ImGui::GetStyle();
+				float padY = style.FramePadding.y;
+				style.FramePadding.y = 10;
+
+				ImGui::SetNextItemWidth(175);
+				if(ImGui::BeginCombo("##areaWinGraSelect", nullptr, ImGuiComboFlags_CustomPreview)){
+                    for(uint32_t i = 0; i < mAreaTypeImages.size(); i++){
+								bool is_selected = (mSelectedChunkHeader->mTextBoxType == i);
+								float cursorX = ImGui::GetCursorPosX();
+								if (ImGui::Selectable(std::format("##areaWin{}",i).c_str(), is_selected, 0, {136, 40})){
+								    mSelectedChunkHeader->mTextBoxType = i;
+								}
+								ImGui::SameLine();
+								ImGui::SetCursorPosX(cursorX);
+								ImGui::Image(mAreaTypeImages[i], {136, 40});
+								if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+                    ImGui::EndCombo();
+				}
+
+				if(ImGui::BeginComboPreview()){
+				    ImGui::SetCursorPosY(ImGui::GetCursorPosY()-10); // hate
+                    ImGui::Image(mAreaTypeImages[mSelectedChunkHeader->mTextBoxType], {136, 40});
+                    ImGui::EndComboPreview();
+				}
+				style.FramePadding.y  = padY;
+            }
 			if(mSelectedChunkPtr != nullptr){
+
 				ImGui::BeginGroup();
-				if(ImGui::Button("Import Chunk Mode; (*.nsbmd)")){
+				if(ImGui::Button("Import Chunk Model; (*.nsbmd)")){
 					mImportChunkModelDialog = true;
 				}
 
@@ -495,6 +533,7 @@ void URotomContext::Render(float deltaTime) {
 
 				if(mMapManager.GetActiveMatrix()->GetHeight() == 1 && mMapManager.GetActiveMatrix()->GetWidth() == 1){
 					mSelectedChunkPtr = entries[0].mChunk;
+					mSelectedChunkHeader = entries[0].mChunkHeader.lock();
 				}
 
 				ImGui::BeginTable("##mapMatrixView", mMapManager.GetActiveMatrix()->GetWidth(), ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX);
@@ -507,6 +546,7 @@ void URotomContext::Render(float deltaTime) {
 							if(isInLocation) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4, 0.8, 0.5, 1.0));
 							if(ImGui::Button(std::format("{}, {}", x, y).c_str(), ImVec2(-1.0,0))){
 								mSelectedChunkPtr = entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunk;
+								mSelectedChunkHeader = entries[(y * mMapManager.GetActiveMatrix()->GetWidth()) + x].mChunkHeader.lock(); // huh??
 							}
 							if(isInLocation) ImGui::PopStyleColor();
 
@@ -558,6 +598,10 @@ void URotomContext::Render(float deltaTime) {
 		}
 
 		if(mCurrentTool == "Trainer Editor" && mRom != nullptr){
+
+		}
+
+		if(mCurrentTool == "Area Editor" && mRom != nullptr){
 
 		}
 
@@ -1223,6 +1267,42 @@ void URotomContext::RenderMenuBar() {
 				// load rom here
 				mRom = std::make_unique<Palkia::Nitro::Rom>(std::filesystem::path(FilePath));
 
+				// convert stuff
+				auto areaWinArc = mRom->GetFile("arc/area_win_gra.narc");
+				bStream::CMemoryStream areaWinStrm(areaWinArc->GetData(), areaWinArc->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+
+
+				auto areaWin = Palkia::Nitro::Archive(areaWinStrm);
+				for(int i = 0; i < 9; i++){
+                    auto ncgrFile = areaWin.GetFileByIndex(i * 2);
+                    auto nclrFile = areaWin.GetFileByIndex((i * 2) + 1);
+
+                    Palkia::Formats::NCGR ncgr;
+                    Palkia::Formats::NCLR nclr;
+
+                    bStream::CMemoryStream ncgrStrm(ncgrFile->GetData(), ncgrFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+                    bStream::CMemoryStream nclrStrm(nclrFile->GetData(), nclrFile->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
+
+                    ncgr.Load(ncgrStrm);
+                    nclr.Load(nclrStrm);
+
+                    auto data = ncgr.Convert(136, 40, nclr);
+
+    				glGenTextures(1, &mAreaTypeImages[i]);
+                    glBindTexture(GL_TEXTURE_2D, mAreaTypeImages[i]);
+
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 136, 40, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+                    glBindTexture(GL_TEXTURE_2D, 0);
+
+				}
+
 				// Load Area Names
 				std::cout << "0x" << std::hex << mRom->GetHeader().gameCode << std::dec << " : " << Configs[mRom->GetHeader().gameCode].mMsgPath << std::endl;
 				auto msgArchive = mRom->GetFile(Configs[mRom->GetHeader().gameCode].mMsgPath);
@@ -1254,7 +1334,7 @@ void URotomContext::RenderMenuBar() {
 				bStream::CMemoryStream owTableStream(overlay->GetData(), overlay->GetSize(), bStream::Endianess::Little, bStream::OpenMode::In);
 				owTableStream.seek(0x2BC34); // todo: load this from game config
 				uint32_t entryID = 0;
-				while(entryID != 0xFFFF){
+				while(entryID != 0xFFFF && owTableStream.tell() + 8 < owTableStream.tell()){
 					entryID = owTableStream.readUInt32();
 				    uint32_t spriteID = owTableStream.readUInt32();
 				    mOverworldSpriteIDs[entryID] = spriteID;
